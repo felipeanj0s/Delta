@@ -1,0 +1,53 @@
+---
+- name: Baixar e instalar o pacote do repositório Zabbix
+  ansible.builtin.apt:
+    deb: "{{ zabbix_repo_url }}"
+    state: present
+  register: zabbix_repo_status
+
+- name: Atualizar cache de pacotes
+  ansible.builtin.apt:
+    update_cache: yes
+  when: zabbix_repo_status.changed
+
+- name: Habilitar o repositório universe (se não estiver habilitado)
+  ansible.builtin.apt_repository:
+    repo: 'deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe'
+    state: present
+    update_cache: yes
+
+- name: Instalar Zabbix Proxy com SQLite
+  ansible.builtin.apt:
+    name: "{{ zabbix_proxy_package }}"
+    state: present
+    
+- name: Criar diretório para o banco de dados do Zabbix Proxy
+  ansible.builtin.file:
+    path: "{{ zabbix_proxy_dbname | dirname }}"
+    state: directory
+    owner: zabbix
+    group: zabbix
+    mode: '0755'
+    
+- name: Criar diretório para o arquivo PID e socket
+  ansible.builtin.file:
+    path: "{{ zabbix_proxy_socket_dir }}"
+    state: directory
+    owner: zabbix
+    group: zabbix
+    mode: '0755'
+
+- name: Aplicar configuração do Zabbix Proxy
+  ansible.builtin.template:
+    src: zabbix_proxy.conf.j2
+    dest: /etc/zabbix/zabbix_proxy.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reiniciar Zabbix Proxy
+
+- name: Habilitar e iniciar Zabbix Proxy
+  ansible.builtin.systemd:
+    name: zabbix-proxy
+    enabled: yes
+    state: started
