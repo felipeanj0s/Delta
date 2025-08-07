@@ -1,0 +1,6 @@
+---
+- name: Provisionar Zabbix Proxy
+  hosts: zabbix_proxy
+  become: yes
+  roles:
+    - zabbix_proxy
