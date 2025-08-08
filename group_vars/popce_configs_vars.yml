@@ -15,7 +15,7 @@ zabbix_agent_package: "zabbix-agent2"
 
 # --- Configuração do Zabbix Proxy ---
 # Configurações específicas para o serviço Zabbix Proxy.
-zabbix_server_ip: "200.129.0.47"
+zabbix_server_ip: "200.129.0.47" # IP do servidor Zabbix Central
 zabbix_proxy_hostname: "ce-pop-sv-vm-zabbix_proxy"
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
