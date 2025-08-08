@@ -2,6 +2,7 @@
 # Variáveis Globais do Projeto - POP-CE
 # Arquivo: group_vars/popce_configs_vars.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles net_security, pre_checks, zabbix_proxy e zabbix_agent.
+# versão: 2.0
 # ==============================================================================
 
 # --- Versão e Repositório Zabbix ---
@@ -75,4 +76,4 @@ ufw_rules:
 fail2ban_sshd_port: 25085
 fail2ban_maxretry: 10
 fail2ban_findtime: 10m
-fail2ban_bantime: 1h
+fail2ban_bantime: 1h 
