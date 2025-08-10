@@ -2,11 +2,13 @@
 # Variáveis Globais do Projeto - POP-CE
 # Arquivo: group_vars/popce_configs_vars.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles net_security, pre_checks, zabbix_proxy e zabbix_agent.
-# versão: 2.0
+# Versão: 2.0
 # ==============================================================================
 
 # --- Versão e Repositório Zabbix ---
-# Define a versão do Zabbix e o pacote do repositório a ser instalado.
+# Usado em:
+#   roles/zabbix_proxy/tasks/main.yml
+#   roles/zabbix_agent/tasks/main.yml
 zabbix_version: "7.4"
 zabbix_repo_file: "zabbix-release_latest_7.4+ubuntu22.04_all.deb"
 zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/ubuntu/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
@@ -14,8 +16,10 @@ zabbix_proxy_package: "zabbix-proxy-sqlite3"
 zabbix_agent_package: "zabbix-agent2"
 
 # --- Configuração do Zabbix Proxy ---
-# Configurações específicas para o serviço Zabbix Proxy.
-zabbix_server_ip: "200.129.0.47" # IP do servidor Zabbix Central
+# Usado em:
+#   roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
+#   roles/zabbix_proxy/tasks/main.yml
+zabbix_server_ip: "200.129.0.47"
 zabbix_proxy_hostname: "ce-pop-sv-vm-zabbix_proxy"
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
@@ -24,23 +28,31 @@ zabbix_proxy_logfile_size: 0
 zabbix_proxy_socket_dir: "/run/zabbix"
 
 # --- Configuração do Zabbix Agent ---
-# Configurações específicas para o serviço Zabbix Agent.
-# O hostname do Agent agora usa o mesmo valor fixo do Proxy.
+# Usado em:
+#   roles/zabbix_agent/templates/zabbix_agentd.conf.j2
+#   roles/zabbix_agent/tasks/main.yml
 zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 zabbix_agent_server: "{{ zabbix_server_ip }}"
 zabbix_agent_serveractive: "{{ zabbix_server_ip }}"
 zabbix_agent_logfile: "/var/log/zabbix/zabbix_agentd.log"
 
 # --- Rede (Netplan) ---
-# Variáveis individuais para facilitar a alteração dos valores de rede.
-netplan_interface: "eth1"
+# Informações de rede do PoP-CE em 2025.
+# Usado em:
+#   roles/net_security/templates/netplan_config.yaml.j2
+#   roles/net_security/tasks/main.yml
+netplan_interface: "eth0" 
 netplan_ipv4_address: "200.129.0.52/27"
 netplan_ipv6_address: "2001:12F0:780:32::52/64"
 netplan_ipv4_gateway: "200.129.0.40"
 netplan_ipv6_gateway: "2001:12F0:780:32::1"
-netplan_dns_list: ["1.1.1.1", "200.129.0.41", "200.129.0.42", "200.129.0.33", "8.8.8.8", "2001:4860:4860::8888", "2001:4860:4860::8844"]
-
-# A estrutura final do Netplan é montada com as variáveis acima.
+netplan_dns_list:
+  - "1.1.1.1"
+  - "8.8.8.8"
+  - "200.129.0.41"
+  - "200.129.0.42"
+  - "2001:4860:4860::8888"
+  - "2001:4860:4860::8844"
 netplan_addresses:
   - "{{ netplan_ipv4_address }}"
   - "{{ netplan_ipv6_address }}"
@@ -53,7 +65,8 @@ netplan_routes:
     via: "{{ netplan_ipv6_gateway }}"
 
 # --- Testes de Conectividade ---
-# Lista de endereços IP para testar a conectividade no início do playbook.
+# Usado em:
+#   roles/pre_checks/tasks/main.yml
 connectivity_test_ips:
   - "{{ zabbix_server_ip }}"
   - "{{ netplan_ipv4_address | ansible.builtin.split('/') | first }}"
@@ -62,18 +75,20 @@ connectivity_test_ips:
   - "{{ netplan_ipv6_gateway }}"
   - "{{ netplan_dns_list }}"
 
-# --- UFW (Uncomplicated Firewall) ---
-# Lista de regras para o UFW. Cada item é um dicionário.
-ufw_rules:
-  - { rule: allow, from: "200.129.0.40", port: "25080", proto: "tcp", comment: "Gateway para internet" }
-  - { rule: allow, from: "any", port: "25085", proto: "tcp", comment: "Porta SSH" }
-  - { rule: allow, from: "any", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent" }
-  - { rule: allow, from: "any", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy" }
-  
+# --- Configurações de Segurança ---
 
-# --- Fail2Ban ---
-# Configurações para a jail de proteção de acesso SSH.
-fail2ban_sshd_port: 25085
-fail2ban_maxretry: 10
-fail2ban_findtime: 10m
-fail2ban_bantime: 1h 
+# Porta SSH customizada utilizada pelo POP (atenção para ajustar regras de firewall conforme porta)
+ssh_port: 25085
+
+# Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)
+fail2ban_sshd_port: "{{ ssh_port }}"
+fail2ban_maxretry: 10        # Número máximo de tentativas antes do banimento
+fail2ban_findtime: 10m       # Janela de tempo para contar tentativas (exemplo: 10 minutos)
+fail2ban_bantime: 1h         # Tempo de banimento após atingir o limite (exemplo: 1 hora)
+
+# UFW regras para liberar portas a partir de IPs da rede e DNS configurados no Netplan
+ufw_rules:
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "Gateway IPV4" }
+  - { rule: allow, from: "any", port: "{{ ssh_port }}", proto: "tcp", comment: "Porta SSH" }
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent - Gateway" }
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy - Gateway" }
