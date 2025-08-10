@@ -1,14 +1,15 @@
 # ==============================================================================
 # Variáveis Globais do Projeto - POP-CE
 # Arquivo: group_vars/popce_configs_vars.yml
-# Descrição: Este arquivo contém variáveis globais utilizadas nos roles net_security, pre_checks, zabbix_proxy e zabbix_agent.
-# Versão: 2.0
+# Descrição: Este arquivo contém variáveis globais utilizadas nos roles net_security,
+#            pre_checks, zabbix_proxy e zabbix_agent. Centralizar as variáveis
+#            aqui garante consistência e facilita a manutenção do projeto.
+# Versão: 2.1
 # ==============================================================================
 
-# --- Versão e Repositório Zabbix ---
-# Usado em:
-#   roles/zabbix_proxy/tasks/main.yml
-#   roles/zabbix_agent/tasks/main.yml
+# --- Configurações de Versão e Repositório Zabbix ---
+# Define as variáveis para o repositório e pacotes do Zabbix.
+# Usado em: roles/zabbix_proxy/tasks/main.yml, roles/zabbix_agent/tasks/main.yml
 zabbix_version: "7.4"
 zabbix_repo_file: "zabbix-release_latest_7.4+ubuntu22.04_all.deb"
 zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/ubuntu/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
@@ -16,9 +17,8 @@ zabbix_proxy_package: "zabbix-proxy-sqlite3"
 zabbix_agent_package: "zabbix-agent2"
 
 # --- Configuração do Zabbix Proxy ---
-# Usado em:
-#   roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
-#   roles/zabbix_proxy/tasks/main.yml
+# Variáveis para a configuração do Zabbix Proxy.
+# Usado em: roles/zabbix_proxy/templates/zabbix_proxy.conf.j2, roles/zabbix_proxy/tasks/main.yml
 zabbix_server_ip: "200.129.0.47"
 zabbix_proxy_hostname: "ce-pop-sv-vm-zabbix_proxy"
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
@@ -28,20 +28,18 @@ zabbix_proxy_logfile_size: 0
 zabbix_proxy_socket_dir: "/run/zabbix"
 
 # --- Configuração do Zabbix Agent ---
-# Usado em:
-#   roles/zabbix_agent/templates/zabbix_agentd.conf.j2
-#   roles/zabbix_agent/tasks/main.yml
+# Variáveis para a configuração do Zabbix Agent. Note a reutilização de variáveis
+# do proxy para manter a consistência.
+# Usado em: roles/zabbix_agent/templates/zabbix_agentd.conf.j2, roles/zabbix_agent/tasks/main.yml
 zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 zabbix_agent_server: "{{ zabbix_server_ip }}"
 zabbix_agent_serveractive: "{{ zabbix_server_ip }}"
 zabbix_agent_logfile: "/var/log/zabbix/zabbix_agentd.log"
 
 # --- Rede (Netplan) ---
-# Informações de rede do PoP-CE em 2025.
-# Usado em:
-#   roles/net_security/templates/netplan_config.yaml.j2
-#   roles/net_security/tasks/main.yml
-netplan_interface: "eth0" 
+# Informações de rede do PoP-CE. Usadas para configurar a interface de rede.
+# Usado em: roles/net_security/templates/netplan_config.yaml.j2, roles/net_security/tasks/main.yml
+netplan_interface: "eth0"
 netplan_ipv4_address: "200.129.0.52/27"
 netplan_ipv6_address: "2001:12F0:780:32::52/64"
 netplan_ipv4_gateway: "200.129.0.40"
@@ -49,8 +47,8 @@ netplan_ipv6_gateway: "2001:12F0:780:32::1"
 netplan_dns_list:
   - "1.1.1.1"
   - "8.8.8.8"
-  - "200.129.0.41"
-  - "200.129.0.42"
+  - "200.129.0.41" # DNS POP-CE PRIMARIO
+  - "200.129.0.42" # DNS POP-CE SECUNDARIO
   - "2001:4860:4860::8888"
   - "2001:4860:4860::8844"
 netplan_addresses:
@@ -58,15 +56,15 @@ netplan_addresses:
   - "{{ netplan_ipv6_address }}"
 netplan_nameservers: "{{ netplan_dns_list }}"
 netplan_routes:
-  - to: 0.0.0.0/0
+  - to: default
     via: "{{ netplan_ipv4_gateway }}"
     metric: 50
   - to: default
     via: "{{ netplan_ipv6_gateway }}"
 
 # --- Testes de Conectividade ---
-# Usado em:
-#   roles/pre_checks/tasks/main.yml
+# IPs e gateways a serem verificados para garantir a comunicação básica.
+# Usado em: roles/pre_checks/tasks/main.yml
 connectivity_test_ips:
   - "{{ zabbix_server_ip }}"
   - "{{ netplan_ipv4_address | ansible.builtin.split('/') | first }}"
@@ -76,19 +74,22 @@ connectivity_test_ips:
   - "{{ netplan_dns_list }}"
 
 # --- Configurações de Segurança ---
-
-# Porta SSH customizada utilizada pelo POP (atenção para ajustar regras de firewall conforme porta)
+# Porta SSH customizada utilizada pelo POP.
 ssh_port: 25085
 
 # Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)
 fail2ban_sshd_port: "{{ ssh_port }}"
-fail2ban_maxretry: 10        # Número máximo de tentativas antes do banimento
-fail2ban_findtime: 10m       # Janela de tempo para contar tentativas (exemplo: 10 minutos)
-fail2ban_bantime: 1h         # Tempo de banimento após atingir o limite (exemplo: 1 hora)
+fail2ban_maxretry: 10          # Número máximo de tentativas antes do banimento
+fail2ban_findtime: 10m         # Janela de tempo para contar tentativas (exemplo: 10 minutos)
+fail2ban_bantime: 1h           # Tempo de banimento após atingir o limite (exemplo: 1 hora)
 
-# UFW regras para liberar portas a partir de IPs da rede e DNS configurados no Netplan
+# UFW regras para liberar portas a partir de IPs da rede e DNS.
+# Adicionada a chave 'direction' para compatibilidade com as tarefas
+# de filtragem de tráfego de entrada e saída.
 ufw_rules:
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "Gateway IPV4" }
-  - { rule: allow, from: "any", port: "{{ ssh_port }}", proto: "tcp", comment: "Porta SSH" }
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent - Gateway" }
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy - Gateway" }
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "Gateway IPV4", direction: 'in' }
+  - { rule: allow, from: "any", port: "{{ ssh_port }}", proto: "tcp", comment: "Porta SSH", direction: 'in' }
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent - Gateway", direction: 'in' }
+  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy - Gateway", direction: 'in' }
+  # Exemplo de regra de saída, caso seja necessário no futuro.
+  # - { rule: allow, port: "53", proto: "udp", comment: "DNS Outbound", direction: 'out' }

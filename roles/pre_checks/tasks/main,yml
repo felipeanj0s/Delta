@@ -1,0 +1,72 @@
+# ==============================================================================
+# Tasks da Role 'pre_checks'
+# Arquivo: roles/pre_checks/tasks/main.yml
+# Descrição:
+#   Esta role executa uma série de validações de pré-requisitos no servidor
+#   de destino antes de prosseguir com a automação principal. O objetivo é
+#   garantir que todas as dependências de rede e de serviços críticos,
+#   conforme definidos no arquivo `group_vars/popce_configs_vars.yml`,
+#   estejam acessíveis e funcionando.
+#
+#   A execução desta role irá falhar e parar o playbook se alguma verificação
+#   não for bem-sucedida, prevenindo a instalação em um ambiente inadequado.
+# ==============================================================================
+
+# --- Verificação de Conectividade com Gateway IPv4 ---
+# Testa a acessibilidade do gateway IPv4 usando o módulo `ping`. Este é o
+# primeiro e mais básico teste para validar a conectividade de rede com
+# a infraestrutura local. O `delegate_to` garante que o ping seja feito
+# a partir do host de destino, confirmando que sua rota padrão está correta.
+- name: Verificar conectividade com o gateway IPv4
+  ansible.builtin.ping:
+  delegate_to: "{{ netplan_ipv4_gateway }}"
+  register: ping_ipv4_gateway
+  changed_when: false
+  # A tarefa irá tentar 3 vezes com um intervalo de 5 segundos se a conexão
+  # falhar, permitindo a recuperação de falhas temporárias.
+  until: ping_ipv4_gateway is succeeded
+  retries: 3
+  delay: 5
+
+# --- Verificação de Conectividade com Gateway IPv6 ---
+# Executa a mesma verificação de ping para o gateway IPv6. Esta tarefa
+# isolada torna o playbook mais claro e fácil de depurar, pois uma falha
+# neste ponto indicaria um problema específico com a conectividade IPv6.
+- name: Verificar conectividade com o gateway IPv6
+  ansible.builtin.ping:
+  delegate_to: "{{ netplan_ipv6_gateway }}"
+  register: ping_ipv6_gateway
+  changed_when: false
+  until: ping_ipv6_gateway is succeeded
+  retries: 3
+  delay: 5
+
+# --- Teste de Disponibilidade do Serviço Zabbix Proxy ---
+# Esta tarefa crítica valida se o Zabbix Server está online e aceitando
+# conexões na porta `10051`, que é a porta de comunicação com o Zabbix Proxy.
+# O `wait_for` é o módulo ideal, pois ele testa a disponibilidade de um
+# serviço TCP em vez de apenas a conectividade de rede.
+- name: Verificar se o serviço do Zabbix Server está disponível para o Proxy
+  ansible.builtin.wait_for:
+    host: "{{ zabbix_server_ip }}"
+    port: 10051
+    timeout: 15
+    state: started
+  tags:
+    - pre_checks_zabbix_proxy
+  changed_when: false
+
+# --- Teste de Disponibilidade do Serviço Zabbix Agent ---
+# Esta tarefa complementar verifica a disponibilidade da porta `10050`
+# no Zabbix Server. Embora não seja diretamente para o proxy, a porta 10050
+# é uma dependência mencionada nas regras de firewall (`ufw_rules`) e
+# é vital para o correto funcionamento de agentes passivos.
+- name: Verificar se o serviço do Zabbix Server está disponível para o Agent
+  ansible.builtin.wait_for:
+    host: "{{ zabbix_server_ip }}"
+    port: 10050
+    timeout: 15
+    state: started
+  tags:
+    - pre_checks_zabbix_agent
+  changed_when: false
