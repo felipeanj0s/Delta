@@ -32,6 +32,6 @@
 # e que ele está rodando (`state: started`).
 - name: Habilitar e iniciar Zabbix Agent
   ansible.builtin.systemd:
-    name: zabbix-agent
+    name: "{{ zabbix_agent_service_name }}"
     enabled: yes
     state: started

@@ -19,7 +19,7 @@ zabbix_repo_file: "zabbix-release_latest_7.4+ubuntu22.04_all.deb"
 zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/ubuntu/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
 zabbix_proxy_package: "zabbix-proxy-sqlite3"
 zabbix_agent_package: "zabbix-agent2"
-
+zabbix_agent_service_name: "zabbix-agent2"
 # --- Rede (parâmetros genéricos) ---
 # A interface de rede (ex: eth0, ens0) agora é definida em cada arquivo de localidade.
 netplan_addresses:
