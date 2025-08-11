@@ -5,7 +5,6 @@
 # A ordem das roles importa.
 # ============================================================================================================================
 ---
-
 - name: Provisionar Zabbix Proxy e configurações
   hosts: zabbix_proxy
   become: yes

@@ -1,7 +1,7 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Variáveis Globais do Projeto - POP-CE
-# Arquivo: group_vars/popce_configs_vars.yml
+# Variáveis Globais do Projeto
+# Arquivo: group_vars/all.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles:
 #           - net_security (roles/net_security)
 #           - pre_checks   (roles/pre_checks)
@@ -20,22 +20,8 @@ zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/ub
 zabbix_proxy_package: "zabbix-proxy-sqlite3"
 zabbix_agent_package: "zabbix-agent2"
 
-# --- Rede (Netplan) ---
-# Informações de rede do PoP-CE. Usadas para configurar a interface de rede.
-# Usado em: roles/net_security/templates/netplan_config.yaml.j2, roles/net_security/tasks/main.yml
-# Os dados abaixo são do PoP-CE
-netplan_interface: "eth0"
-netplan_ipv4_address: "200.129.0.52/27"
-netplan_ipv6_address: "2001:12F0:780:32::52/64"
-netplan_ipv4_gateway: "200.129.0.40"
-netplan_ipv6_gateway: "2001:12F0:780:32::1"
-netplan_dns_list:
-  - "1.1.1.1"
-  - "8.8.8.8"
-  - "200.129.0.41" # DNS POP-CE PRIMARIO
-  - "200.129.0.42" # DNS POP-CE SECUNDARIO
-  - "2001:4860:4860::8888"
-  - "2001:4860:4860::8844"
+# --- Rede (parâmetros genéricos) ---
+# A interface de rede (ex: eth0, ens0) agora é definida em cada arquivo de localidade.
 netplan_addresses:
   - "{{ netplan_ipv4_address }}"
   - "{{ netplan_ipv6_address }}"
@@ -47,10 +33,7 @@ netplan_routes:
   - to: default
     via: "{{ netplan_ipv6_gateway }}"
 
-# --- Configuração do Zabbix Proxy ---
-# Variáveis para a configuração do Zabbix Proxy.
-zabbix_server_ip: "200.129.0.47" # A ser substituido pelo ip do zabbix server central
-zabbix_proxy_hostname: "ce-pop-sv-vm-zabbixproxy" # Deve ser modificado de acordo com gt de nomenclatura 
+# --- Configuração do Zabbix Proxy (comum / arquivos e paths) ---
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
@@ -58,9 +41,6 @@ zabbix_proxy_logfile_size: 0
 zabbix_proxy_socket_dir: "/run/zabbix"
 
 # --- Configuração do Zabbix Agent ---
-# Variáveis para a configuração do Zabbix Agent. Note a reutilização de variáveis
-# do proxy para manter a consistência.
-# Usado em: roles/zabbix_agent/templates/zabbix_agentd.conf.j2, roles/zabbix_agent/tasks/main.yml
 zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 zabbix_agent_server: "{{ zabbix_server_ip }}"
 zabbix_agent_serveractive: "{{ zabbix_server_ip }}"
@@ -78,7 +58,7 @@ connectivity_test_ips:
   - "{{ netplan_dns_list }}"
 
 # --- Configurações de Segurança ---
-# Porta SSH customizada utilizada pelo POP.
+# Porta SSH customizada.
 ssh_port: 25085
 
 # Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)

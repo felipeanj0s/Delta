@@ -1,2 +1,80 @@
-[zabbix_proxy]
+[ac] # Acre
+localhost ansible_connection=local
+
+[al] # Alagoas
+localhost ansible_connection=local
+
+[ap] # Amapá
+localhost ansible_connection=local
+
+[am] # Amazonas
+localhost ansible_connection=local
+
+[ba] # Bahia
+localhost ansible_connection=local
+
+[ce] # Ceará
+localhost ansible_connection=local
+
+[df] # Distrito Federal
+localhost ansible_connection=local
+
+[es] # Espírito Santo
+localhost ansible_connection=local
+
+[go] # Goiás
+localhost ansible_connection=local
+
+[ma] # Maranhão
+localhost ansible_connection=local
+
+[mt] # Mato Grosso
+localhost ansible_connection=local
+
+[ms] #Mato Grosso do Sul
+localhost ansible_connection=local
+
+[mg] # Minas Gerais
+localhost ansible_connection=local
+
+[pa] # Pará
+localhost ansible_connection=local
+
+[pb] # Paraíba
+localhost ansible_connection=local
+
+[pr] # Paraná
+localhost ansible_connection=local
+
+[pe] # Pernambuco
+localhost ansible_connection=local
+
+[pi] # Piauí
+localhost ansible_connection=local
+
+[rj] # Rio de Janeiro
+localhost ansible_connection=local
+
+[rn] # Rio Grande do Norte
+localhost ansible_connection=local
+
+[rs] # Rio Grande do Sul
+localhost ansible_connection=local
+
+[ro] # Rondônia
+localhost ansible_connection=local
+
+[rr] # Roraima
+localhost ansible_connection=local
+
+[sc] # Santa Catarina
+localhost ansible_connection=local
+
+[sp] # São Paulo
+localhost ansible_connection=local
+
+[se] # Sergipe
+localhost ansible_connection=local
+
+[to] # Tocantins
 localhost ansible_connection=local
