@@ -1,0 +1,11 @@
+# Arquivo /etc/ssh/sshd_config gerado pelo Ansible
+
+Port {{ ssh_port }}
+
+# Use as configurações padrão e inclua configs adicionais
+Include /etc/ssh/sshd_config.d/*.conf
+
+# Configurações padrão recomendadas:
+
+PermitRootLogin no
+PasswordAuthentication yes

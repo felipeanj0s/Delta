@@ -1,0 +1,31 @@
+---
+# ==============================================================================
+# Handlers da Role 'network_security'
+# Arquivo: roles/net_security/handlers/main.yml
+# Descrição:
+#   Handlers responsáveis por aplicar ações após notificações das tasks,
+#   como reiniciar serviços e aplicar configurações.
+# ==============================================================================
+
+# --- Aplicar configuração do Netplan ---
+# Executa o comando 'netplan apply' para ativar as configurações de rede
+# copiadas via template.
+- name: Aplicar Netplan
+  ansible.builtin.command:
+    cmd: netplan apply
+
+# --- Reiniciar serviço Fail2Ban ---
+# Reinicia o serviço fail2ban para aplicar as novas regras e configurações.
+- name: Reiniciar Fail2Ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted
+    enabled: yes
+
+# --- Reiniciar serviço SSH ---
+# Reinicia o serviço sshd para aplicar alterações na configuração do SSH.
+- name: Reiniciar SSH
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+    enabled: yes

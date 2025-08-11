@@ -1,6 +1,9 @@
 ---
+# ==============================================================================
+# Handlers da Role 'zabbix_proxy'
+# Arquivo: roles/zabbix_proxy/handlers/main.yml
+# ==============================================================================
 - name: Reiniciar Zabbix Proxy
   ansible.builtin.systemd:
     name: zabbix-proxy
     state: restarted
-

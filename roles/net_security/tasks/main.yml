@@ -1,0 +1,119 @@
+# ==============================================================================
+# Tasks da Role 'network_security'
+# Arquivo: roles/net_security/tasks/main.yml
+# Descrição:
+#   Este playbook orquestra a aplicação de configurações essenciais de segurança
+#   e rede no servidor, garantindo um estado inicial seguro e funcional.
+#   As tarefas incluem:
+#     - Configuração do nome do host (`hostname`).
+#     - Aplicação da configuração de rede (`Netplan`).
+#     - Instalação e ativação de serviços de segurança (`UFW` e `Fail2Ban`).
+#     - Personalização da porta SSH e outras diretivas de segurança.
+#     - Aplicação granular de regras de firewall de entrada e saída.
+#   Todas as variáveis utilizadas são gerenciadas de forma centralizada
+#   no arquivo `group_vars/popce_configs_vars.yml`.
+# ==============================================================================
+
+# --- Configuração do Hostname ---
+# Define o nome da máquina para facilitar a identificação na rede e no
+# sistema de monitoramento Zabbix. A tarefa é idempotente, ou seja, só
+# será executada se o hostname atual for diferente do valor da variável.
+- name: Configurar o hostname da máquina
+  ansible.builtin.hostname:
+    name: "{{ zabbix_proxy_hostname }}"
+
+# --- Configuração de Rede (Netplan) ---
+# Gera o arquivo de configuração de rede para o Netplan a partir do template
+# `netplan_config.yaml.j2`. Este template usa variáveis para definir IPs,
+# gateways e servidores DNS. Uma notificação é enviada ao handler "Aplicar Netplan"
+# para que a nova configuração de rede seja ativada, mas apenas se o arquivo for alterado.
+- name: Configurar rede via Netplan
+  ansible.builtin.template:
+    src: netplan_config.yaml.j2
+    dest: "/etc/netplan/00-installer-config.yaml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Aplicar Netplan
+
+# --- Instalação de Ferramentas de Segurança ---
+# Garante a presença dos pacotes `ufw` e `fail2ban`. O uso de `update_cache: yes`
+# é crucial para que o sistema de gerenciamento de pacotes encontre as últimas
+# versões disponíveis, especialmente após a adição de novos repositórios.
+- name: Instalar UFW e Fail2Ban
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+    state: present
+    update_cache: yes
+
+# --- Configuração da Porta SSH ---
+# Aplica um template para configurar o serviço SSH. Esta tarefa define a porta
+# de escuta a partir da variável `ssh_port` e reforça a segurança ao desabilitar
+# o login direto de root e permitir apenas a autenticação por senha.
+# Notifica o handler "Reiniciar SSH" para aplicar as mudanças de forma segura.
+- name: Configurar a porta do SSH no sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+  notify:
+    - Reiniciar SSH
+
+# --- Configuração de Regras do UFW (Inbound) ---
+# Aplica as regras de firewall para tráfego de entrada. A tarefa itera sobre a
+# lista `ufw_rules` e utiliza a condição `when` para aplicar apenas as regras
+# marcadas como 'inbound'. A chave `direction` na variável é utilizada para
+# diferenciar os tipos de regra.
+- name: Configurar regras UFW (entrada)
+  ansible.builtin.ufw:
+    rule: "{{ item.rule }}"
+    from_ip: "{{ item.from | default(omit) }}"
+    to_ip: "{{ item.to | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ ufw_rules }}"
+  when: item.direction is not defined or item.direction == 'in'
+
+# --- Configuração de Regras do UFW (Outbound) ---
+# Aplica as regras de firewall para tráfego de saída. A tarefa itera sobre a
+# lista `ufw_rules` e utiliza a condição `when` para aplicar somente as regras
+# marcadas com 'outbound'. Isso permite um controle granular do tráfego.
+- name: Configurar regras UFW (saída)
+  ansible.builtin.ufw:
+    rule: "{{ item.rule }}"
+    direction: "{{ item.direction }}"
+    from_ip: "{{ item.from | default(omit) }}"
+    to_ip: "{{ item.to | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ ufw_rules }}"
+  when: item.direction is defined and item.direction == 'out'
+
+# --- Ativação do Firewall ---
+# Habilita o firewall `ufw` após a aplicação de todas as regras. Esta tarefa
+# deve ser a última no processo de configuração do firewall para garantir que
+# todas as regras necessárias já estejam em vigor antes da ativação.
+- name: Habilitar UFW
+  ansible.builtin.ufw:
+    state: enabled
+
+# --- Configuração do Fail2Ban para SSH ---
+# Copia o template de configuração do Fail2Ban para a jail 'sshd' para o
+# diretório de configuração do serviço. Os parâmetros de segurança (porta,
+# tentativas máximas, tempo de banimento) são definidos pelas variáveis
+# globais, facilitando o ajuste. Uma notificação é enviada para o handler
+# "Reiniciar Fail2Ban" se a configuração for alterada.
+- name: Configurar Fail2Ban SSHD
+  ansible.builtin.template:
+    src: sshd.local.j2
+    dest: /etc/fail2ban/jail.d/sshd.local
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reiniciar Fail2Ban

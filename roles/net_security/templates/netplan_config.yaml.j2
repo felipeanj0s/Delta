@@ -1,0 +1,11 @@
+network:
+  version: 2
+  ethernets:
+    {{ netplan_interface }}:
+      dhcp4: no
+      addresses:
+        {{ netplan_addresses | to_nice_yaml(indent=8) | indent(8) }}
+      nameservers:
+        addresses: {{ netplan_nameservers | to_nice_yaml(indent=8) | indent(8) }}
+      routes:
+        {{ netplan_routes | to_nice_yaml(indent=8) | indent(8) }}

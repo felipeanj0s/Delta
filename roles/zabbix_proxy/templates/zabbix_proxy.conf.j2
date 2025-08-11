@@ -1,3 +1,12 @@
+# ==============================================================================
+# Template de Configuração do Zabbix Proxy
+# Arquivo: roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
+# Descrição: Este template gera o arquivo de configuração do Zabbix Proxy,
+#            utilizando variáveis globais para garantir consistência.
+# ==============================================================================
+
+
+# Zabbix Proxy Config
 Server={{ zabbix_server_ip }}
 Hostname={{ zabbix_proxy_hostname }}
 DBName={{ zabbix_proxy_dbname }}
@@ -5,3 +14,9 @@ LogFile={{ zabbix_proxy_logfile }}
 PidFile={{ zabbix_proxy_pidfile }}
 LogFileSize={{ zabbix_proxy_logfile_size }}
 SocketDir={{ zabbix_proxy_socket_dir }}
+
+# SSL
+TLSConnect=psk
+TLSAccept=psk
+TLSPSKFile={{ ssl_key_path }}
+TLSPSKIdentity={{ zabbix_proxy_hostname }}

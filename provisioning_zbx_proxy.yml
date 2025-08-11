@@ -1,6 +1,15 @@
+# ============================================================================================================================
+# Provisionamento do Projeto - POP-CE
+# Arquivo: delta/provisioning_zbx_proxy.yml
+# Descrição: Este arquivo é responsável por provisionar a instalação do Zabbix Proxy, Zabbix Agent e suas configurações.
+# ============================================================================================================================
 ---
-- name: Provisionar Zabbix Proxy
+
+- name: Provisionar Zabbix Proxy e configurações
   hosts: zabbix_proxy
   become: yes
   roles:
+    - pre_checks
+    - net_security
     - zabbix_proxy
+    - zabbix_agent
