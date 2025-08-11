@@ -15,8 +15,4 @@ PidFile={{ zabbix_proxy_pidfile }}
 LogFileSize={{ zabbix_proxy_logfile_size }}
 SocketDir={{ zabbix_proxy_socket_dir }}
 
-# SSL
-TLSConnect=psk
-TLSAccept=psk
-TLSPSKFile={{ ssl_key_path }}
-TLSPSKIdentity={{ zabbix_proxy_hostname }}
+
