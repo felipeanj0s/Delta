@@ -52,7 +52,7 @@
 # configuração seja alterado.
 - name: Aplicar configuração do Zabbix Proxy
   ansible.builtin.template:
-    src: zabbix_proxy.conf.j2
+    src: zabbix_proxy.conf.j2 # roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
     dest: /etc/zabbix/zabbix_proxy.conf
     owner: root
     group: root

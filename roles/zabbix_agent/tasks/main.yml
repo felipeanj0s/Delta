@@ -20,7 +20,7 @@
 # O `notify` aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
 - name: Configurar Zabbix Agent
   ansible.builtin.template:
-    src: zabbix_agentd.conf.j2
+    src: zabbix_agentd.conf.j2 # roles/zabbix_agent/templates/zabbix_agentd.conf.j2
     dest: /etc/zabbix/zabbix_agentd.conf
     owner: root
     group: root

@@ -1,3 +1,4 @@
+---
 # ==============================================================================
 # Tasks da Role 'network_security'
 # Arquivo: roles/net_security/tasks/main.yml
@@ -11,13 +12,13 @@
 #     - Personalização da porta SSH e outras diretivas de segurança.
 #     - Aplicação granular de regras de firewall de entrada e saída.
 #   Todas as variáveis utilizadas são gerenciadas de forma centralizada
-#   no arquivo `group_vars/popce_configs_vars.yml`.
+#   no arquivo `group_vars/all.yml`.
 # ==============================================================================
 
 # --- Configuração do Hostname ---
 # Define o nome da máquina para facilitar a identificação na rede e no
-# sistema de monitoramento Zabbix. A tarefa é idempotente, ou seja, só
-# será executada se o hostname atual for diferente do valor da variável.
+# sistema de monitoramento Zabbix. A tarefa só será executada se o hostname atual
+#for diferente do valor da variável.
 - name: Configurar o hostname da máquina
   ansible.builtin.hostname:
     name: "{{ zabbix_proxy_hostname }}"
@@ -29,8 +30,8 @@
 # para que a nova configuração de rede seja ativada, mas apenas se o arquivo for alterado.
 - name: Configurar rede via Netplan
   ansible.builtin.template:
-    src: netplan_config.yaml.j2
-    dest: "/etc/netplan/00-installer-config.yaml"
+    src: netplan_config.yaml.j2 # roles/net_security/templates/netplan_config.yaml.j2
+    dest: "/etc/netplan/00-installer-config.yaml" 
     owner: root
     group: root
     mode: '0644'
@@ -45,7 +46,7 @@
     name:
       - ufw
       - fail2ban
-    state: present
+    state: present # Garante que os pacotes estejam instalados. Sempre vai tentar instalar a versão estavel dos pacotes. 
     update_cache: yes
 
 # --- Configuração da Porta SSH ---
@@ -55,7 +56,7 @@
 # Notifica o handler "Reiniciar SSH" para aplicar as mudanças de forma segura.
 - name: Configurar a porta do SSH no sshd_config
   ansible.builtin.template:
-    src: sshd_config.j2
+    src: sshd_config.j2 # roles/net_security/templates/sshd_config.j2
     dest: /etc/ssh/sshd_config
     owner: root
     group: root
@@ -111,9 +112,9 @@
 # "Reiniciar Fail2Ban" se a configuração for alterada.
 - name: Configurar Fail2Ban SSHD
   ansible.builtin.template:
-    src: sshd.local.j2
+    src: sshd.local.j2 # roles/net_security/templates/sshd.local.j2
     dest: /etc/fail2ban/jail.d/sshd.local
     owner: root
     group: root
     mode: '0644'
-  notify: Reiniciar Fail2Ban
+  notify: Reiniciar Fail2Ban 
