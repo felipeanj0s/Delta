@@ -10,6 +10,7 @@
   become: yes
   roles:
     - pre_checks
+    - net_security
     - zabbix_proxy
     - zabbix_agent
-    - net_security
+ 

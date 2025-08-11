@@ -57,9 +57,7 @@ connectivity_test_ips:
   - "{{ netplan_ipv6_gateway }}"
   - "{{ netplan_dns_list }}"
 
-# --- Configurações de Segurança ---
-# Porta SSH customizada.
-ssh_port: 25085
+
 
 # Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)
 fail2ban_sshd_port: "{{ ssh_port }}"
