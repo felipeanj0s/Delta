@@ -1,0 +1,5 @@
+# --- Handlers da Role 'zabbix_agent' ---
+- name: Reiniciar Zabbix Agent
+  ansible.builtin.systemd:
+    name: zabbix-agent2
+    state: restarted
