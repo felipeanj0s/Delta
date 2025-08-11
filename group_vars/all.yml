@@ -20,7 +20,7 @@ zabbix_agent_package: "zabbix-agent2"
 # Variáveis para a configuração do Zabbix Proxy.
 # Usado em: roles/zabbix_proxy/templates/zabbix_proxy.conf.j2, roles/zabbix_proxy/tasks/main.yml
 zabbix_server_ip: "200.129.0.47"
-zabbix_proxy_hostname: "ce-pop-sv-vm-zabbix_proxy"
+zabbix_proxy_hostname: "ce-pop-sv-vm-zabbixproxy"
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"

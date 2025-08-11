@@ -4,8 +4,22 @@ network:
     {{ netplan_interface }}:
       dhcp4: no
       addresses:
-        {{ netplan_addresses | to_nice_yaml(indent=8) | indent(8) }}
+{% for address in netplan_addresses %}
+        - {{ address }}
+{% endfor %}
       nameservers:
-        addresses: {{ netplan_nameservers | to_nice_yaml(indent=8) | indent(8) }}
+        addresses:
+{% for dns_server in netplan_nameservers %}
+          - {{ dns_server }}
+{% endfor %}
       routes:
-        {{ netplan_routes | to_nice_yaml(indent=8) | indent(8) }}
+{% for route in netplan_routes %}
+{% if route.metric is defined %}
+        - to: {{ route.to }}
+          via: {{ route.via }}
+          metric: {{ route.metric }}
+{% else %}
+        - to: {{ route.to }}
+          via: {{ route.via }}
+{% endif %}
+{% endfor %}

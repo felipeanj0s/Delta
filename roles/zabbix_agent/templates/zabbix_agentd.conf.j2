@@ -4,8 +4,3 @@ ServerActive={{ zabbix_agent_serveractive }}
 Hostname={{ zabbix_agent_hostname }}
 LogFile={{ zabbix_agent_logfile }}
 
-# SSL
-TLSConnect=psk
-TLSAccept=psk
-TLSPSKFile={{ ssl_key_path }}
-TLSPSKIdentity={{ zabbix_agent_hostname }}
