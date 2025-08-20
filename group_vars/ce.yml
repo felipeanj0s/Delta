@@ -7,7 +7,7 @@
 # --- Rede (Netplan) ---
 # Informações de rede do PoP-CE. Usadas para configurar a interface de rede.
 # Os dados abaixo são do PoP-CE
-netplan_interface: "eth1"
+netplan_interface: "eth0"
 netplan_ipv4_address: "200.129.0.52/27"
 netplan_ipv6_address: "2001:12F0:780:32::52/64"
 netplan_ipv4_gateway: "200.129.0.40"
