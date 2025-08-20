@@ -43,6 +43,7 @@
     mode: '0755'
   loop:
     - { path: "{{ zabbix_proxy_dbname | dirname }}" }
+    - { path: "{{ zabbix_proxy_logfile | dirname }}" } 
     - { path: "{{ zabbix_proxy_socket_dir }}" }
 
 # Aplica a configuração do Zabbix Proxy. O template 'zabbix_proxy.conf.j2'
