@@ -47,6 +47,7 @@ zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
 zabbix_proxy_listenip: 0.0.0.0 # IP de escuta do Zabbix Proxy
 zabbix_proxy_listenport: 10051 # Porta de escuta do Zabbix Proxy
+zabbix_proxy_socket_dir: "/var/run/zabbix"
 
 # ---- configurações especfiicas variaveis zabbix proxy ---
 # atenção
