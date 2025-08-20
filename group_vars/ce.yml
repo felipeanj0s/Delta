@@ -4,7 +4,6 @@
 # Descrição: Este arquivo contém variáveis específicas de rede e hostname
 #           utilizadas nos roles do projeto para o POP-CE.
 # ==============================================================================
-
 # --- Rede (Netplan) ---
 # Informações de rede do PoP-CE. Usadas para configurar a interface de rede.
 # Os dados abaixo são do PoP-CE
@@ -23,7 +22,6 @@ netplan_dns_list:
 # --- Configurações de Segurança ---
 # Porta SSH customizada.
 ssh_port: 25085
-
 # --- Configuração do Zabbix Proxy ---
 # Variáveis para a configuração do Zabbix Proxy.
 zabbix_server_ip: "200.129.0.47" # A ser substituido pelo ip do zabbix server central

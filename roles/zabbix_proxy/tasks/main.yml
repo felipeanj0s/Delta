@@ -32,7 +32,6 @@
   ansible.builtin.apt:
     name: "{{ zabbix_proxy_package }}"
     state: present
-    
 # Cria os diretórios necessários para o banco de dados e o socket do Zabbix Proxy.
 # O loop (`loop`) itera sobre uma lista para criar ambos os diretórios com uma única tarefa.
 - name: Criar diretórios necessários
