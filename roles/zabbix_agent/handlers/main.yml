@@ -1,6 +1,10 @@
-# --- Handlers da Role 'zabbix_agent' ---
+# ==============================================================================
+# Handlers da Role 'zabbix_agent'
+# Arquivo: roles/zabbix_agent/handlers/main.yml
+# Descrição: Este arquivo contém os handlers para a role 'zabbix_agent'.
+# ==============================================================================
+
 - name: Reiniciar Zabbix Agent
   ansible.builtin.systemd:
-    name: zabbix-agent2
+    name: "{{ zabbix_agent_service_name }}"
     state: restarted
-    

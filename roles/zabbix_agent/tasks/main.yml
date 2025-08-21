@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# Task para a Role 'zabbix_agent'
+# Tasks da Role 'zabbix_agent'
 # Arquivo: roles/zabbix_agent/tasks/main.yml
 # ==============================================================================
 
@@ -28,8 +28,8 @@
   notify: Reiniciar Zabbix Agent
 
 # --- Gestão do Serviço ---
-# Garante que o serviço 'zabbix-agent' está habilitado para iniciar com o sistema
-# e que ele está rodando (`state: started`).
+# Garante que o serviço do agente está habilitado para iniciar com o sistema
+# e que ele está rodando. O nome do serviço é definido via variável.
 - name: Habilitar e iniciar Zabbix Agent
   ansible.builtin.systemd:
     name: "{{ zabbix_agent_service_name }}"
