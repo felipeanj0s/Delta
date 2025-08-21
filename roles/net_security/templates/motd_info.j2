@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# ==============================================================================
+# GT Monitoramento 2025
+# Script de Geração de Mensagem do Dia (MOTD)
+# Descrição: Este script dinâmico exibe informações do sistema após o login,
+#            como hostname e IP, usando variáveis do Ansible.
+# ==============================================================================
+
+echo ""
+echo "################################################################"
+echo "        Bem-vindo, {{ zabbix_proxy_hostname }}"
+echo "################################################################"
+echo ""
+echo " - Acesso Concedido. Toda atividade está sendo monitorada."
+echo " - Versão do Zabbix Agent: {{ zabbix_agent_package }}"
+echo " - Endereço IP: {{ netplan_ipv4_address }}"
+echo " - Último login: `last -1`"
+echo ""

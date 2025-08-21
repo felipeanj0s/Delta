@@ -37,6 +37,29 @@
     mode: '0644'
   notify: Aplicar Netplan
 
+# --- Configuração do Banner de Acesso ---
+# Aplica um template para criar o banner de aviso no login SSH.
+# O banner agora é dinâmico, usando o nome do host via variável.
+- name: Criar banner de aviso (issue.net)
+  ansible.builtin.template:
+    src: issue.net.j2  
+    dest: "/etc/issue.net"
+    owner: root
+    group: root
+    mode: "0644"
+# --- Configuração do MOTD (Message of the Day) ---
+# Adiciona um script personalizado para exibir informações do sistema
+# após o login.
+- name: Criar script personalizado para MOTD
+  ansible.builtin.template:
+    src: "motd_info.j2"
+    dest: "/etc/update-motd.d/99-ansible-info"
+    owner: root
+    group: root
+    mode: "0755"
+  notify:
+    - Atualizar MOTD
+
 # --- Instalação de Ferramentas de Segurança ---
 # Garante a presença dos pacotes `ufw` e `fail2ban`. O uso de `update_cache: yes`
 # é crucial para que o sistema de gerenciamento de pacotes encontre as últimas

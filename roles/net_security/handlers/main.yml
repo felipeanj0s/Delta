@@ -29,3 +29,6 @@
     name: sshd
     state: restarted
     enabled: yes
+    
+- name: Atualizar MOTD
+  ansible.builtin.comman

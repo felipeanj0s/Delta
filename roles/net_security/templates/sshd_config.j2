@@ -1,11 +1,80 @@
-# Arquivo /etc/ssh/sshd_config gerado pelo Ansible
+# ==============================================================================
+# GT Monitoramento 2025
+# Template de Configuração do OpenSSH Server (sshd)
+# Descrição: Este template gera o arquivo /etc/ssh/sshd_config a partir das
+#            variáveis do Ansible. Mantém as configs padrão, mas personaliza
+#            portas e segurança.
+# ==============================================================================
+
+# Package generated configuration file
+# See the sshd_config(5) manpage for details
 
 Port {{ ssh_port }}
 
-# Use as configurações padrão e inclua configs adicionais
-Include /etc/ssh/sshd_config.d/*.conf
+#ListenAddress ::
+#ListenAddress 0.0.0.0
+Protocol 2
 
-# Configurações padrão recomendadas:
+# Chaves do Host para o protocolo v2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
 
-PermitRootLogin no
+# Separação de privilégios ativada por segurança
+UsePrivilegeSeparation yes
+
+# Vida útil e tamanho da chave efêmera
+KeyRegenerationInterval 3600
+ServerKeyBits 1024
+
+# Log
+SyslogFacility AUTH
+LogLevel INFO
+
+# Autenticação
+LoginGraceTime 120
+
+#   Se a porta não for 22, o login de root é desabilitado por segurança.
+PermitRootLogin prohibit-password
+
+StrictModes yes
+
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile  %h/.ssh/authorized_keys
+
+# Não lê os arquivos ~/.rhosts e ~/.shosts dos usuários
+IgnoreRhosts yes
+HostbasedAuthentication no
+#IgnoreUserKnownHosts yes
+
+# Não permitir senhas vazias (recomendado)
+PermitEmptyPasswords no
+
+# Desativar autenticação de resposta/desafio (problemas com alguns módulos PAM)
+ChallengeResponseAuthentication no
+
+# Autenticação por senha habilitada
 PasswordAuthentication yes
+
+X11Forwarding yes
+X11DisplayOffset 10
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+#UseLogin no
+
+#MaxStartups 10:30:60
+#Banner /etc/issue.net
+
+# Permite que o cliente passe variáveis de ambiente
+AcceptEnv LANG LC_*
+
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# Habilita o uso de PAM para autenticação e sessão
+UsePAM yes
+
+# Inclua arquivos de configuração adicionais
+Include /etc/ssh/sshd_config.d/*.conf

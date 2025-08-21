@@ -1,8 +1,21 @@
+# ==============================================================================
+# GT Monitoramento 2025
+# Template de Configuração do Fail2Ban para SSH (sshd.local.j2)
+# Descrição: Este template configura a 'jail' para o serviço SSH, usando
+#            variáveis para definir parâmetros de segurança como porta,
+#            tentativas máximas e tempo de banimento.
+# ==============================================================================
+
 [sshd]
-enabled  = true
-port     = {{ fail2ban_sshd_port }}
-filter   = sshd
-logpath  = /var/log/auth.log
+
+enabled = true
+port = {{ fail2ban_sshd_port }}
+filter = sshd
+logpath = /var/log/auth.log
 maxretry = {{ fail2ban_maxretry }}
 findtime = {{ fail2ban_findtime }}
-bantime  = {{ fail2ban_bantime }}
+bantime = {{ fail2ban_bantime }}
+
+# IPs que não devem ser banidos. Inclui IPs do servidor Zabbix,
+# do gateway e dos servidores DNS, conforme as variáveis.
+ignoreip = 127.0.0.1/8 {{ zabbix_server_ip }} {{ netplan_ipv4_gateway }} {{ netplan_dns_list | join(' ') }}
