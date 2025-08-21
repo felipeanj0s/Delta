@@ -93,27 +93,48 @@ zabbix_proxy_timeout: 15 # tempo limite em segundos para as operações do Zabbi
 # ==============================================================================
 # Seção IV: Configurações do Zabbix Agent
 # ==============================================================================
+# --- Parâmetros de Conexão ---
+# Hostname do agente, deve ser exatamente igual ao hostname configurado
+# no frontend do Zabbix Server.
 zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
+
+# Endereço IP do servidor Zabbix para checagens passivas (pull).
+# O servidor Zabbix fará requisições para este agente.
 zabbix_agent_server: "{{ zabbix_server_ip }}"
+
+# Endereço IP do servidor Zabbix para checagens ativas (push).
+# O agente irá enviar dados para este endereço.
 zabbix_agent_serveractive: "{{ zabbix_server_ip }}"
-zabbix_agent_logfile: "/var/log/zabbix/zabbix_agentd.log"
-# Variáveis adicionais para o Zabbix Agent (conforme o template).
-# Caminho para o arquivo PID do agente.
-zabbix_agent_pidfile: "/run/zabbix/zabbix_agentd.pid"
+
+
+# --- Caminhos de Arquivos e Logs ---
+# Caminho completo para o arquivo de log do Zabbix Agent 2.
+zabbix_agent_logfile: "/var/log/zabbix/zabbix_agent2.log"
+
+# Caminho completo para o arquivo PID do Zabbix Agent 2.
+zabbix_agent_pidfile: "/run/zabbix/zabbix_agent2.pid"
+
 # Tamanho máximo do arquivo de log em MB. '0' para rotação ilimitada.
 zabbix_agent_logfile_size: 0
+
+# Caminho para incluir arquivos de configuração adicionais (ex: UserParameters).
+# Este caminho deve ser específico para o Agent 2.
+zabbix_agent_include_dir: "/etc/zabbix/zabbix_agent2.conf.d/*.conf"
+
+
+# --- Parâmetros de Performance e Segurança ---
 # Porta que o agente escuta para conexões de checagens passivas.
 zabbix_agent_listenport: 10050
+
 # Número de processos pré-iniciados para checagens passivas. Se 0, desabilita.
 zabbix_agent_start_agents: 3
+
 # Tempo de espera em segundos para o agente processar uma checagem.
 zabbix_agent_timeout: 15
+
 # Habilita ou desabilita a execução de comandos remotos do Zabbix Server.
 # '0' - desabilitado (mais seguro).
-# '1' - habilitado.
 zabbix_agent_enable_remote_commands: 0
-# Caminho para incluir arquivos de configuração adicionais (ex: UserParameters).
-zabbix_agent_include_dir: "/etc/zabbix/zabbix_agentd.conf.d/*.conf"
 
 # ==============================================================================
 # Seção V: Segurança

@@ -20,13 +20,12 @@
 # O `notify` aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
 - name: Configurar Zabbix Agent
   ansible.builtin.template:
-    src: zabbix_agent2.conf.j2 # roles/zabbix_agent/templates/zabbix_agent2.conf.j2
-    dest: /etc/zabbix/zabbix_agent2.conf 
+    src: zabbix_agent2.conf.j2 # <--- Nome do arquivo que você mostrou
+    dest: /etc/zabbix/zabbix_agent2.conf
     owner: root
     group: root
     mode: '0644'
   notify: Reiniciar Zabbix Agent
-
 # --- Gestão do Serviço ---
 # Garante que o serviço do agente está habilitado para iniciar com o sistema
 # e que ele está rodando. O nome do serviço é definido via variável.
