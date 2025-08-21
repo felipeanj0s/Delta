@@ -25,4 +25,4 @@ ssh_port: 25085
 # --- Configuração do Zabbix Proxy ---
 # Variáveis para a configuração do Zabbix Proxy.
 zabbix_server_ip: "200.129.0.47" # A ser substituido pelo ip do zabbix server central
-zabbix_proxy_hostname: "ce-pop-sv-vm-zabbixproxy" # Deve ser modificado de acordo com gt de nomenclatura
+zabbix_proxy_hostname: "ce-pop-sv-vm-zabbixproxy" 
