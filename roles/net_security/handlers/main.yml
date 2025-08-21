@@ -31,4 +31,4 @@
     enabled: yes
     
 - name: Atualizar MOTD
-  ansible.builtin.comman
+  ansible.builtin.command: /usr/bin/run-parts --regex '^[0-9]+-.*' /etc/update-motd.d/

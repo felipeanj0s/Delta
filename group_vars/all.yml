@@ -88,7 +88,6 @@ zabbix_proxy_housekeeping_frequency: 1 # frequência de execução da limpeza em
 zabbix_proxy_cachesize: 512M # tamanho do cache do Zabbix Proxy em megabytes
 zabbix_proxy_startdbsyncers: 5 # número de instâncias pré-forked de dbsyncers
 zabbix_proxy_historycachesize: 512M # tamanho do cache de histórico do Zabbix Proxy em megabytes
-zabbix_proxy_historytextcachesize: 48M # tamanho do cache de texto de histórico do Zabbix Proxy em megabytes
 zabbix_proxy_timeout: 15 # tempo limite em segundos para as operações do Zabbix Proxy
 
 # ==============================================================================
@@ -117,18 +116,8 @@ zabbix_agent_enable_remote_commands: 0
 zabbix_agent_include_dir: "/etc/zabbix/zabbix_agentd.conf.d/*.conf"
 
 # ==============================================================================
-# Seção V: Segurança e Testes de Conectividade
+# Seção V: Segurança
 # ==============================================================================
-# --- Testes de Conectividade ---
-# IPs e gateways a serem verificados para garantir a comunicação básica.
-# Usado em: roles/pre_checks/tasks/main.yml
-connectivity_test_ips:
-  - "{{ zabbix_server_ip }}"
-  - "{{ netplan_ipv4_address | ansible.builtin.split('/') | first }}"
-  - "{{ netplan_ipv6_address | ansible.builtin.split('/') | first }}"
-  - "{{ netplan_ipv4_gateway }}"
-  - "{{ netplan_ipv6_gateway }}"
-  - "{{ netplan_dns_list }}"
 
 # Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)
 fail2ban_sshd_port: "{{ ssh_port }}"
