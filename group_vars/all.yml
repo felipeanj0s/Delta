@@ -58,17 +58,16 @@ zabbix_proxy_dbname: "/tmp/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
 zabbix_proxy_socket_dir: "/run/zabbix"
-zabbix_proxy_listenip: "0.0.0.0" 
-zabbix_proxy_listenport: 10051 
 zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
 zabbix_proxy_fping_location: "/usr/bin/fping"
 zabbix_proxy_fping6_location: "/usr/bin/fping6"
 
 # --- Parâmetros de Conexão e Processos ---
 zabbix_proxy_mode: 0
+zabbix_proxy_listenip: "0.0.0.0"
+zabbix_proxy_listenport: 10051
 zabbix_proxy_buffermode: "hybrid"
 zabbix_proxy_memory_buffer_size: "256M"
-zabbix_proxy_offline_buffer: 12
 zabbix_proxy_startpollers: 550
 zabbix_proxy_startpreprocessors: 40
 zabbix_proxy_startpollersunreachable: 350
@@ -86,12 +85,13 @@ zabbix_proxy_startvmwarecollectors: 1
 zabbix_proxy_cachesize: 512M
 zabbix_proxy_historycachesize: 64M
 zabbix_proxy_historyindexcachesize: 32M
-zabbix_proxy_proxybuffer: 0 
+zabbix_proxy_proxybuffer: 0
 zabbix_proxy_offline_buffer: 12
 
 # --- Timers e Tempo ---
 zabbix_proxy_config_frequency: 60
 zabbix_proxy_datasender_frequency: 1
+zabbix_proxy_heartbeat_frequency: 60
 zabbix_proxy_housekeeping_frequency: 1
 zabbix_proxy_unreachable_period: 45
 zabbix_proxy_unavailable_delay: 60
