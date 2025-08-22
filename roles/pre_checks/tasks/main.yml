@@ -4,24 +4,28 @@
 # Arquivo: roles/pre_checks/tasks/main.yml
 # ==============================================================================
 
+# ==============================================================================
 # --- Verificação de Conectividade ---
 # Esta tarefa simples executa um teste de ping para cada IP na lista
 # `connectivity_test_ips`. A execução não será interrompida se algum ping falhar.
+# ==============================================================================
 - name: Testar a conectividade com os IPs de destino
   ansible.builtin.command: "ping -c 3 {{ item }}"
   loop:
     - "{{ zabbix_server_ip }}"
-    - "{{ netplan_ipv4_address.split('/') | first }}"
-    - "{{ netplan_ipv6_address.split('/') | first }}"
-    - "{{ netplan_ipv4_gateway }}"
-    - "{{ netplan_ipv6_gateway }}"
-    - "{{ netplan_dns_list | join(' ') }}"
+    - "{{ pop_network_ipv4_address.split('/') | first }}"
+    - "{{ pop_network_ipv6_address.split('/') | first }}"
+    - "{{ pop_network_ipv4_gateway }}"
+    - "{{ pop_network_ipv6_gateway }}"
+    - "{{ pop_network_dns_list | join(' ') }}"
   register: ping_results
   changed_when: false
   ignore_errors: true
 
+# ==============================================================================
 # --- Exibir Resultados dos Testes ---
 # Mostra o resultado do teste para cada IP, indicando se foi bem-sucedido ou não.
+# ==============================================================================
 - name: Mostrar resultados dos testes de conectividade
   ansible.builtin.debug:
     msg: "Teste para {{ item.item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"

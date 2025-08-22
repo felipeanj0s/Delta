@@ -2,27 +2,36 @@
 # Variáveis Específicas do Projeto - POP-CE
 # Arquivo: group_vars/ce.yml
 # Descrição: Este arquivo contém variáveis específicas de rede e hostname
-#           utilizadas nos roles do projeto para o POP-CE.
+#            utilizadas nos roles do projeto para o POP-CE.
 # ==============================================================================
-# --- Rede (Netplan) ---
-# Informações de rede do PoP-CE. Usadas para configurar a interface de rede.
+
+# ==============================================================================
+# --- Configuração do Nome para o Zabbix Proxy e Agent ---
+# ==============================================================================
+zabbix_proxy_hostname: "ce-rnp-sv-vm-zabbix-proxy01"
+zabbix_agent_hostname: "ce-rnp-sv-vm-zabbix-proxy01-agent"
+
+# ==============================================================================
+# --- Informações de rede do PoP-CE. Usadas para configurar a interface de rede ---
+# ==============================================================================
 # Os dados abaixo são do PoP-CE
-netplan_interface: "eth1"
-netplan_ipv4_address: "200.129.0.52/27"
-netplan_ipv6_address: "2001:12F0:780:32::52/64"
-netplan_ipv4_gateway: "200.129.0.40"
-netplan_ipv6_gateway: "2001:12F0:780:32::1"
-netplan_dns_list:
-  - "1.1.1.1"
-  - "8.8.8.8"
-  - "200.129.0.41" # DNS POP-CE PRIMARIO
-  - "200.129.0.42" # DNS POP-CE SECUNDARIO
-  - "2001:4860:4860::8888"
-  - "2001:4860:4860::8844"
-# --- Configurações de Segurança ---
+pop_network_interface: "eth1"
+pop_network_ipv4_address: "200.129.0.52/27"
+pop_network_ipv6_address: "2001:12F0:780:32::52/64"
+pop_network_ipv4_gateway: "200.129.0.40"
+pop_network_ipv6_gateway: "2001:12F0:780:32::1"
+# Lista de servidores DNS para o PoP-CE.
+pop_network_dns_list:
+  - "200.129.0.41" # dns popce
+  - "200.129.0.42" # dns popce
+  - "200.19.16.53" # dns rnp
+  - "200.137.53.53" # dns rnp
+  - "2001:12f0:253::53" # dns rnp
+  - "2001:12f0:353::53" # dns rnp
+
+# ==============================================================================
+# --- Configurações de Segurança Especificas para o PoP-CE ---
+# ==============================================================================
 # Porta SSH customizada.
 ssh_port: 25085
-# --- Configuração do Zabbix Proxy ---
-# Variáveis para a configuração do Zabbix Proxy.
-zabbix_server_ip: "200.129.0.47" # A ser substituido pelo ip do zabbix server central
-zabbix_proxy_hostname: "ce-pop-sv-vm-zabbixproxy" 
+

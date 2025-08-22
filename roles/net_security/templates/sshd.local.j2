@@ -18,4 +18,4 @@ bantime = {{ fail2ban_bantime }}
 
 # IPs que não devem ser banidos. Inclui IPs do servidor Zabbix,
 # do gateway e dos servidores DNS, conforme as variáveis.
-ignoreip = 127.0.0.1/8 {{ zabbix_server_ip }} {{ netplan_ipv4_gateway }} {{ netplan_dns_list | join(' ') }}
+ignoreip = 127.0.0.1/8 {{ zabbix_server_ip }} {{ pop_network_ipv4_gateway }} {{ pop_network_dns_list | join(' ') }}

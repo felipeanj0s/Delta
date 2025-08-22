@@ -4,33 +4,39 @@
 # Arquivo: roles/zabbix_agent/tasks/main.yml
 # ==============================================================================
 
+# ==============================================================================
 # --- Instalação do Zabbix Agent ---
 # Instala o pacote do Zabbix Agent, conforme definido na variável `zabbix_agent_package`.
-# O `update_cache: yes` garante que o cache de pacotes seja atualizado antes da instalação,
-# prevenindo erros de "pacote não encontrado".
+# O `update_cache: yes` garante que o cache de pacotes seja atualizado antes da instalação.
+# ==============================================================================
 - name: Instalar Zabbix Agent
   ansible.builtin.apt:
     name: "{{ zabbix_agent_package }}"
     state: present
     update_cache: yes
 
+# ==============================================================================
 # --- Configuração do Zabbix Agent ---
 # Aplica o arquivo de configuração do agente (`zabbix_agent2.conf.j2`) no servidor.
 # Este template usa as variáveis para preencher a configuração.
 # O `notify` aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
+# ==============================================================================
 - name: Configurar Zabbix Agent
   ansible.builtin.template:
-    src: zabbix_agent2.conf.j2 # <--- Nome do arquivo que você mostrou
+    src: zabbix_agent2.conf.j2
     dest: /etc/zabbix/zabbix_agent2.conf
     owner: root
     group: root
     mode: '0644'
   notify: Reiniciar Zabbix Agent
+
+# ==============================================================================
 # --- Gestão do Serviço ---
 # Garante que o serviço do agente está habilitado para iniciar com o sistema
-# e que ele está rodando. O nome do serviço é definido via variável.
+# e que ele está rodando. O nome do serviço é hard-coded.
+# ==============================================================================
 - name: Habilitar e iniciar Zabbix Agent
   ansible.builtin.systemd:
-    name: "{{ zabbix_agent_service_name }}"
+    name: zabbix-agent2
     enabled: yes
     state: started

@@ -1,80 +1,42 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Template de Configuração do OpenSSH Server (sshd)
-# Descrição: Este template gera o arquivo /etc/ssh/sshd_config a partir das
-#            variáveis do Ansible. Mantém as configs padrão, mas personaliza
-#            portas e segurança.
+# Template de Configuração do OpenSSH Server (sshd) - Versão Sucinta
+# Descrição: Este template gera o arquivo /etc/ssh/sshd_config com
+#            as configurações essenciais e seguras, baseadas em variáveis.
 # ==============================================================================
 
-# Package generated configuration file
-# See the sshd_config(5) manpage for details
-
+# --- Parâmetros de Conexão e Segurança ---
 Port {{ ssh_port }}
-
-#ListenAddress ::
-#ListenAddress 0.0.0.0
 Protocol 2
 
-# Chaves do Host para o protocolo v2
+# Desabilitar login de root por senha quando a porta é customizada
+PermitRootLogin {{ 'prohibit-password' if ssh_port != 22 else 'no' }}
+PasswordAuthentication yes
+
+# --- Chaves de Autenticação e Host ---
 HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_dsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
 HostKey /etc/ssh/ssh_host_ed25519_key
-
-# Separação de privilégios ativada por segurança
-UsePrivilegeSeparation yes
-
-# Vida útil e tamanho da chave efêmera
-KeyRegenerationInterval 3600
-ServerKeyBits 1024
-
-# Log
-SyslogFacility AUTH
-LogLevel INFO
-
-# Autenticação
-LoginGraceTime 120
-
-#   Se a porta não for 22, o login de root é desabilitado por segurança.
-PermitRootLogin prohibit-password
-
-StrictModes yes
-
-RSAAuthentication yes
-PubkeyAuthentication yes
 AuthorizedKeysFile  %h/.ssh/authorized_keys
 
-# Não lê os arquivos ~/.rhosts e ~/.shosts dos usuários
+# --- Parâmetros de Sessão e Log ---
+UsePrivilegeSeparation yes
+SyslogFacility AUTH
+LogLevel INFO
+LoginGraceTime 120
+StrictModes yes
 IgnoreRhosts yes
-HostbasedAuthentication no
-#IgnoreUserKnownHosts yes
-
-# Não permitir senhas vazias (recomendado)
 PermitEmptyPasswords no
-
-# Desativar autenticação de resposta/desafio (problemas com alguns módulos PAM)
 ChallengeResponseAuthentication no
-
-# Autenticação por senha habilitada
-PasswordAuthentication yes
-
 X11Forwarding yes
-X11DisplayOffset 10
 PrintMotd no
 PrintLastLog yes
 TCPKeepAlive yes
-#UseLogin no
 
-#MaxStartups 10:30:60
+# --- Outras Configurações ---
 Banner /etc/issue.net
-
-# Permite que o cliente passe variáveis de ambiente
 AcceptEnv LANG LC_*
-
 Subsystem sftp /usr/lib/openssh/sftp-server
-
-# Habilita o uso de PAM para autenticação e sessão
 UsePAM yes
-
-# Inclua arquivos de configuração adicionais
 Include /etc/ssh/sshd_config.d/*.conf

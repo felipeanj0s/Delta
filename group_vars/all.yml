@@ -3,154 +3,160 @@
 # Variáveis Globais do Projeto
 # Arquivo: group_vars/all.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles:
-#            - net_security (roles/net_security)
-#            - pre_checks   (roles/pre_checks)
-#            - zabbix_proxy (roles/zabbix_proxy)
-#            - zabbix_agent (roles/zabbix_agent)
-# Versão: 2.3
-# Data: 2025-08-20
+#             - net_security (roles/net_security)
+#             - pre_checks   (roles/pre_checks)
+#             - zabbix_proxy (roles/zabbix_proxy)
+#             - zabbix_agent (roles/zabbix_agent)
+# Versão: 3.0
+# Data: 2025-08-21
 # Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br
 # ==============================================================================
+
+# ==============================================================================
+# Seção 0: Variáveis Globais
+# ==============================================================================
+# IP do Zabbix Server Central.
+zabbix_server_ip: "200.237.196.218"
+# IPs dos servidores Zabbix para checagens ativas.
+zabbix_active_server_ips:
+  - "200.237.196.218"
+  - "200.237.196.219"
 
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
 # Define as variáveis para o repositório e pacotes do Zabbix.
-zabbix_version: "7.4"
-zabbix_repo_file: "zabbix-release_latest_7.4+ubuntu22.04_all.deb"
-zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/ubuntu/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
-zabbix_proxy_package: "zabbix-proxy-sqlite3"
-zabbix_agent_package: "zabbix-agent2"
+zabbix_version: "7.2"
+zabbix_repo_file: "zabbix-release_latest_7.2+debian12_all.deb"
+zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/debian/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
+zabbix_proxy_package: "zabbix-proxy-sqlite3=1:7.2.7-1+debian12"
+zabbix_agent_package: "zabbix-agent2=1:7.2.7-1+debian12"
 zabbix_agent_service_name: "zabbix-agent2"
 
 # ==============================================================================
-# Seção II: Configurações de Rede (Gerais)
+# Seção II: Configurações de Rede
 # ==============================================================================
-# $$$$$$$$$$$$$$$$$  Rede (parâmetros genéricos) $$$$$$$$$$$$$$$$$$$$ #
-# A interface de rede (ex: eth0, ens0) é definida em cada arquivo de localidade.
-netplan_addresses:
-  - "{{ netplan_ipv4_address }}"
-  - "{{ netplan_ipv6_address }}"
-netplan_nameservers: "{{ netplan_dns_list }}"
-netplan_routes:
+# Variáveis de rede genéricas.
+pop_network_addresses:
+  - "{{ pop_network_ipv4_address }}"
+  - "{{ pop_network_ipv6_address }}"
+pop_network_nameservers: "{{ pop_network_dns_list }}"
+pop_network_routes:
   - to: default
-    via: "{{ netplan_ipv4_gateway }}"
+    via: "{{ pop_network_ipv4_gateway }}"
     metric: 50
   - to: default
-    via: "{{ netplan_ipv6_gateway }}"
+    via: "{{ pop_network_ipv6_gateway }}"
 
 # ==============================================================================
 # Seção III: Configurações do Zabbix Proxy
+# Referência: https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_proxy.conf
 # ==============================================================================
-zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db"
+# --- Caminhos de Arquivos ---
+zabbix_proxy_dbname: "/tmp/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
-zabbix_proxy_listenip: 0.0.0.0 # IP de escuta do Zabbix Proxy
-zabbix_proxy_listenport: 10051 # Porta de escuta do Zabbix Proxy
-zabbix_proxy_socket_dir: "/var/run/zabbix"
+zabbix_proxy_socket_dir: "/run/zabbix"
+zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
+zabbix_proxy_fping_location: "/usr/bin/fping"
+zabbix_proxy_fping6_location: "/usr/bin/fping6"
 
-# ---- configurações especfiicas variaveis zabbix proxy ---
-# atenção
-zabbix_proxy_mode: 0 # modo passivo = 1, modo ativo = 0
-# obs: O modo passivo é recomendado para ambientes com alta latência
-# ou onde o proxy está em uma rede diferente do servidor Zabbix.
-# Se ProxyMode estiver definido como 0, este parâmetro em
-#Modo Ativo:
-#O agente inicia a comunicação com o servidor ou proxy.
-#O agente envia dados para o servidor ou proxy em intervalos regulares ou quando o buffer de dados está cheio.
-#Configurado através do parâmetro ServerActive no arquivo de configuração do agente.
-#Modo Passivo:
-#O servidor ou proxy solicita os dados ao agente.
-#O agente responde com os dados solicitados.
+# --- Parâmetros de Conexão e Processos ---
+zabbix_proxy_mode: 0
+zabbix_proxy_buffermode: "hybrid"
+zabbix_proxy_memory_buffer_size: "256M"
+zabbix_proxy_offline_buffer: 12
+zabbix_proxy_startpollers: 550
+zabbix_proxy_startpreprocessors: 40
+zabbix_proxy_startpollersunreachable: 350
+zabbix_proxy_starttrappers: 30
+zabbix_proxy_startpingers: 100
+zabbix_proxy_startdiscoverers: 100
+zabbix_proxy_starthttpollers: 10
+zabbix_proxy_startsnmppollers: 50
+zabbix_proxy_startagentpollers: 50
+zabbix_proxy_startdbsyncers: 4
+zabbix_proxy_startipmipollers: 1
+zabbix_proxy_startvmwarecollectors: 1
 
-zabbix_proxy_proxybuffer: 0 # # tempo que o proxy vai guardar dados locamento quando for sincronizado com o server
-zabbix_proxy_offline_buffer: 36 # tempo em horas que o proxy vai guardar dados quando estiver offline
-zabbix_proxy_heartbeat_frequency: 60 # frequência do heartbeat em segundos. Disponibilidade do proxy no lado do server. Modo passivo ignora isso
-zabbix_proxy_config_frequency: 3600 # frequência de atualização da configuração em segundos. Modo passivo ignora isso
-zabbix_proxy_datasender_frequency: 1 # frequência de envio de dados em segundos. Modo passivo ignora isso
+# --- Cache e Buffers ---
+zabbix_proxy_cachesize: 512M
+zabbix_proxy_historycachesize: 64M
+zabbix_proxy_historyindexcachesize: 32M
+zabbix_proxy_proxybuffer: 0 
+zabbix_proxy_offline_buffer: 12
 
-#   --- configurações globais variaveis zabbix proxy --
-zabbix_proxy_logfile_size: 0 # aumenta indefinidamente.
+# --- Timers e Tempo ---
+zabbix_proxy_config_frequency: 60
+zabbix_proxy_datasender_frequency: 1
+zabbix_proxy_housekeeping_frequency: 1
+zabbix_proxy_unreachable_period: 45
+zabbix_proxy_unavailable_delay: 60
+zabbix_proxy_unreachable_delay: 15
+zabbix_proxy_timeout: 15
+zabbix_proxy_trappertimeout: 300
+zabbix_proxy_debug_level: 1
+zabbix_proxy_logfile_size: 5
 
-# option: server é obrigatório:
-# Mandatory: yes (if ProxyMode is set to 0)
+# --- TLS ---
+zabbix_proxy_tls_connect: "psk"
+zabbix_proxy_tls_accept: "psk"
+zabbix_proxy_psk_identity: "zabbix-rnp-ger-proxy-01-psk"
+zabbix_proxy_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-proxy.psk"
 
-#   --- configurações avançadas variaveis zabbix proxy --
-zabbix_proxy_startpollers: 5 # número de instâncias pré-forked de pollers
-zabbix_proxy_startpollersunreachable: 1 # número de instâncias pré-forked de pollers para hosts sem alcance (incluindo IPMI)
-zabbix_proxy_startpingers: 1 # número de instâncias pré-forked de pingers
-zabbix_proxy_startdiscoverers: 1 # número de instâncias pré-forked de discoverers
-zabbix_proxy_starthttpollers: 1 # número de instâncias pré-forked de HTTP pollers
-zabbix_proxy_javagateway: 127.0.0.1 # endereço IP (ou hostname) do gateway Java do Zabbix, se tiver
-zabbix_proxy_javagatewayport: 10052 # porta que o gateway Java do Zabbix escuta, se tiver
-zabbix_proxy_startjavapollers: 5 # número de instâncias pré-forked de Java pollers
-zabbix_proxy_housekeeping_frequency: 1 # frequência de execução da limpeza em horas de informações do historico, alertas e tabelas de alarmes
-zabbix_proxy_cachesize: 512M # tamanho do cache do Zabbix Proxy em megabytes
-zabbix_proxy_startdbsyncers: 5 # número de instâncias pré-forked de dbsyncers
-zabbix_proxy_historycachesize: 512M # tamanho do cache de histórico do Zabbix Proxy em megabytes
-zabbix_proxy_timeout: 15 # tempo limite em segundos para as operações do Zabbix Proxy
+# --- Compatibilidade ---
+zabbix_proxy_allow_unsupported_db: 0
 
 # ==============================================================================
 # Seção IV: Configurações do Zabbix Agent
+# Referência: https://git.rnp.br/.../zabbix_agent2.conf
 # ==============================================================================
 # --- Parâmetros de Conexão ---
-# Hostname do agente, deve ser exatamente igual ao hostname configurado
-# no frontend do Zabbix Server.
-zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
-
-# Endereço IP do servidor Zabbix para checagens passivas (pull).
-# O servidor Zabbix fará requisições para este agente.
+zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
 zabbix_agent_server: "{{ zabbix_server_ip }}"
-
-# Endereço IP do servidor Zabbix para checagens ativas (push).
-# O agente irá enviar dados para este endereço.
-zabbix_agent_serveractive: "{{ zabbix_server_ip }}"
-
+zabbix_agent_serveractive_list: "{{ zabbix_active_server_ips }}"
+zabbix_agent_source_ip: "{{ pop_network_ipv4_address | split('/') | first }}"
 
 # --- Caminhos de Arquivos e Logs ---
-# Caminho completo para o arquivo de log do Zabbix Agent 2.
-zabbix_agent_logfile: "/var/log/zabbix/zabbix_agent2.log"
-
-# Caminho completo para o arquivo PID do Zabbix Agent 2.
 zabbix_agent_pidfile: "/run/zabbix/zabbix_agent2.pid"
+zabbix_agent_logtype: "file"
+zabbix_agent_logfile: "/var/log/zabbix/zabbix_agent2.log"
+zabbix_agent_logfile_size: 5
+zabbix_agent_include_dir: "/etc/zabbix/zabbix_agent2.d/*.conf"
+zabbix_agent_control_socket: "/tmp/agent.sock"
 
-# Tamanho máximo do arquivo de log em MB. '0' para rotação ilimitada.
-zabbix_agent_logfile_size: 0
-
-# Caminho para incluir arquivos de configuração adicionais (ex: UserParameters).
-# Este caminho deve ser específico para o Agent 2.
-zabbix_agent_include_dir: "/etc/zabbix/zabbix_agent2.conf.d/*.conf"
-
-
-# --- Parâmetros de Performance e Segurança ---
-# Porta que o agente escuta para conexões de checagens passivas.
+# --- Parâmetros de Processos e Desempenho ---
 zabbix_agent_listenport: 10050
+zabbix_agent_start_agents: 0
+zabbix_agent_timeout: 30
+zabbix_agent_debug_level: 1
+zabbix_agent_refresh_active_checks: 300
+zabbix_agent_buffer_send: 10
+zabbix_agent_buffer_size: 100
+zabbix_agent_enable_persistent_buffer: 0
+zabbix_agent_persistent_buffer_period: "1h"
 
-# Número de processos pré-iniciados para checagens passivas. Se 0, desabilita.
-zabbix_agent_start_agents: 3
-
-# Tempo de espera em segundos para o agente processar uma checagem.
-zabbix_agent_timeout: 15
-
-# Habilita ou desabilita a execução de comandos remotos do Zabbix Server.
-# '0' - desabilitado (mais seguro).
+# --- Parâmetros de Segurança e Plugins ---
 zabbix_agent_enable_remote_commands: 0
+zabbix_agent_tls_connect: "psk"
+zabbix_agent_tls_accept: "psk"
+zabbix_agent_psk_identity: "zabbix-rnp-ger-agent-psk"
+zabbix_agent_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-agent.psk"
+zabbix_agent_plugins_log_max_lines: 20
+zabbix_agent_plugins_docker_endpoint: "unix:///var/run/docker.sock"
+zabbix_agent_plugins_docker_timeout: 20
 
 # ==============================================================================
 # Seção V: Segurança
 # ==============================================================================
-
-# Configurações para Fail2Ban (proteção contra ataques de força bruta SSH)
+# Configurações para Fail2Ban e UFW.
 fail2ban_sshd_port: "{{ ssh_port }}"
-fail2ban_maxretry: 10          # Número máximo de tentativas antes do banimento
-fail2ban_findtime: 10m         # Janela de tempo para contar tentativas (exemplo: 10 minutos)
-fail2ban_bantime: 24h        # Tempo de banimento após atingir o limite (exemplo: 24 horas)
+fail2ban_maxretry: 10
+fail2ban_findtime: 10m
+fail2ban_bantime: 24h
 
-# UFW regras para liberar portas a partir de IPs da rede e DNS.
-# Adicionada a chave 'direction' para compatibilidade com as tarefas
-# de filtragem de tráfego de entrada e saída.
 ufw_rules:
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "Gateway IPV4", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "Gateway IPV4", direction: 'in' }
   - { rule: allow, from: "any", port: "{{ ssh_port }}", proto: "tcp", comment: "Porta SSH", direction: 'in' }
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent - Gateway", direction: 'in' }
-  - { rule: allow, from: "{{ netplan_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy - Gateway", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Porta Zabbix Agent - Gateway", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Porta Zabbix Proxy - Gateway", direction: 'in' }
