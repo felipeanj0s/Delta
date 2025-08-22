@@ -1,5 +1,5 @@
 # ==============================================================================
-# Template de Configuração de Rede - Debian 12
+# Template de Configuração de Rede - Debian 12 (Versão Final)
 # Arquivo: roles/net_security/templates/interfaces.j2
 # ==============================================================================
 
@@ -17,12 +17,12 @@ auto {{ pop_network_interface }}
 
 # Configuração IPv4
 iface {{ pop_network_interface }} inet static
-  address {{ pop_network_ipv4_address | ansible.builtin.split('/')[0] }}
-  netmask {{ pop_network_ipv4_address | ansible.builtin.split('/')[1] | ansible.builtin.ipmath('0') | ansible.builtin.ipmath('255.255.255.255') | ansible.builtin.ipmath(pop_network_ipv4_address | ansible.builtin.split('/')[1] | ansible.builtin.ipmath('0.0.0.0')) }}
+  address {{ pop_network_ipv4_address | ipaddr('address') }}
+  netmask {{ pop_network_ipv4_address | ipaddr('netmask') }}
   gateway {{ pop_network_ipv4_gateway }}
   dns-nameservers {{ pop_network_dns_list | join(' ') }}
 
 # Configuração IPv6
 iface {{ pop_network_interface }} inet6 static
-  address {{ pop_network_ipv6_address }}
+  address {{ pop_network_ipv6_address | ipaddr('address') }}
   gateway {{ pop_network_ipv6_gateway }}
