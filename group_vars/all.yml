@@ -58,6 +58,7 @@ zabbix_proxy_dbname: "/tmp/zabbix_proxy.db"
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
 zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
 zabbix_proxy_socket_dir: "/run/zabbix"
+zabbix_proxy_listenip: "0.0.0.0" 
 zabbix_proxy_listenport: 10051 
 zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
 zabbix_proxy_fping_location: "/usr/bin/fping"
