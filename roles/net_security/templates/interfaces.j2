@@ -3,28 +3,19 @@
 # Arquivo: roles/net_security/templates/interfaces.j2
 # ==============================================================================
 
-# Este arquivo descreve as interfaces de rede disponíveis e como ativá-las.
-# Para mais informações, veja interfaces(5).
-
 source /etc/network/interfaces.d/*
 
-# A interface de loopback
 auto lo
 iface lo inet loopback
 
-# A interface de rede primária (IPv4 e IPv6)
 auto {{ pop_network_interface }}
 
-# Configuração IPv4
 iface {{ pop_network_interface }} inet static
   address {{ pop_network_ipv4_address | ansible.builtin.split('/')[0] }}
   netmask {{ pop_network_ipv4_address | ansible.builtin.split('/')[1] | ansible.builtin.ipmath('0') | ansible.builtin.ipmath('255.255.255.255') | ansible.builtin.ipmath(pop_network_ipv4_address | ansible.builtin.split('/')[1] | ansible.builtin.ipmath('0.0.0.0')) }}
   gateway {{ pop_network_ipv4_gateway }}
+  dns-nameservers {{ pop_network_dns_list | join(' ') }}
 
-# Configuração IPv6
 iface {{ pop_network_interface }} inet6 static
   address {{ pop_network_ipv6_address }}
   gateway {{ pop_network_ipv6_gateway }}
-
-# Servidores DNS
-dns-nameservers {{ pop_network_dns_list | join(' ') }}

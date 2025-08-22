@@ -7,7 +7,7 @@
 # ==============================================================================
 # --- Verificação de Conectividade ---
 # Esta tarefa simples executa um teste de ping para cada IP na lista
-# `connectivity_test_ips`. A execução não será interrompida se algum ping falhar.
+# de forma separada.
 # ==============================================================================
 - name: Testar a conectividade com os IPs de destino
   ansible.builtin.command: "ping -c 3 {{ item }}"
@@ -17,7 +17,7 @@
     - "{{ pop_network_ipv6_address.split('/') | first }}"
     - "{{ pop_network_ipv4_gateway }}"
     - "{{ pop_network_ipv6_gateway }}"
-    - "{{ pop_network_dns_list | join(' ') }}"
+    - "{{ pop_network_dns_list }}"
   register: ping_results
   changed_when: false
   ignore_errors: true
