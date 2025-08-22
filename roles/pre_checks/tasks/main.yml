@@ -28,5 +28,5 @@
 # ==============================================================================
 - name: Mostrar resultados dos testes de conectividade
   ansible.builtin.debug:
-    msg: "Teste para {{ item.item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"
+    msg: "Teste para {{ item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"
   loop: "{{ ping_results.results }}"
