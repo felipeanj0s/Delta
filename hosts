@@ -1,80 +1,85 @@
-[ac] # Acre
-localhost ansible_connection=local
+# ===================================================================
+# Inventário Ansible - hosts
+# Cada host é único, mesmo que seja localhost, para separar variáveis
+# ===================================================================
 
-[al] # Alagoas
-localhost ansible_connection=local
+[ac]
+ac_localhost ansible_connection=local
 
-[ap] # Amapá
-localhost ansible_connection=local
+[al]
+al_localhost ansible_connection=local
 
-[am] # Amazonas
-localhost ansible_connection=local
+[ap]
+ap_localhost ansible_connection=local
 
-[ba] # Bahia
-localhost ansible_connection=local
+[am]
+am_localhost ansible_connection=local
 
-[ce] # Ceará
-localhost ansible_connection=local
+[ba]
+ba_localhost ansible_connection=local
 
-[df] # Distrito Federal
-localhost ansible_connection=local
+[ce]
+ce_localhost ansible_connection=local
 
-[es] # Espírito Santo
-localhost ansible_connection=local
+[df]
+df_localhost ansible_connection=local
 
-[go] # Goiás
-localhost ansible_connection=local
+[es]
+es_localhost ansible_connection=local
 
-[ma] # Maranhão
-localhost ansible_connection=local
+[go]
+go_localhost ansible_connection=local
 
-[mt] # Mato Grosso
-localhost ansible_connection=local
+[ma]
+ma_localhost ansible_connection=local
 
-[ms] #Mato Grosso do Sul
-localhost ansible_connection=local
+[mt]
+mt_localhost ansible_connection=local
 
-[mg] # Minas Gerais
-localhost ansible_connection=local
+[ms]
+ms_localhost ansible_connection=local
 
-[pa] # Pará
-localhost ansible_connection=local
+[mg]
+mg_localhost ansible_connection=local
 
-[pb] # Paraíba
-localhost ansible_connection=local
+[pa]
+pa_localhost ansible_connection=local
 
-[pr] # Paraná
-localhost ansible_connection=local
+[pb]
+pb_localhost ansible_connection=local
 
-[pe] # Pernambuco
-localhost ansible_connection=local
+[pr]
+pr_localhost ansible_connection=local
 
-[pi] # Piauí
-localhost ansible_connection=local
+[pe]
+pe_localhost ansible_connection=local
 
-[rj] # Rio de Janeiro
-localhost ansible_connection=local
+[pi]
+pi_localhost ansible_connection=local
 
-[rn] # Rio Grande do Norte
-localhost ansible_connection=local
+[rj]
+rj_localhost ansible_connection=local
 
-[rs] # Rio Grande do Sul
-localhost ansible_connection=local
+[rn]
+rn_localhost ansible_connection=local
 
-[ro] # Rondônia
-localhost ansible_connection=local
+[rs]
+rs_localhost ansible_connection=local
 
-[rr] # Roraima
-localhost ansible_connection=local
+[ro]
+ro_localhost ansible_connection=local
 
-[sc] # Santa Catarina
-localhost ansible_connection=local
+[rr]
+rr_localhost ansible_connection=local
 
-[sp] # São Paulo
-localhost ansible_connection=local
+[sc]
+sc_localhost ansible_connection=local
 
-[se] # Sergipe
-localhost ansible_connection=local
+[sp]
+sp_localhost ansible_connection=local
 
-[to] # Tocantins
-localhost ansible_connection=local
+[se]
+se_localhost ansible_connection=local
+
+[to]
+to_localhost ansible_connection=local

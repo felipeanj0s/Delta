@@ -66,7 +66,7 @@ zabbix_proxy_mode: 0
 zabbix_proxy_listenip: "0.0.0.0"
 zabbix_proxy_listenport: 10051
 zabbix_proxy_buffermode: "hybrid"
-#zabbix_proxy_memory_buffer_size: "256M"
+zabbix_proxy_memory_buffer_size: "256M"
 zabbix_proxy_startpollers: 50
 zabbix_proxy_startpreprocessors: 40
 zabbix_proxy_startpollersunreachable: 60
@@ -84,7 +84,7 @@ zabbix_proxy_startvmwarecollectors: 1
 zabbix_proxy_cachesize: 512M
 zabbix_proxy_historycachesize: 64M
 zabbix_proxy_historyindexcachesize: 32M
-#zabbix_proxy_proxybuffer: 0
+zabbix_proxy_proxybuffer: 0
 zabbix_proxy_offline_buffer: 12
 
 # --- Timers e Tempo ---
@@ -96,7 +96,7 @@ zabbix_proxy_unreachable_period: 45
 zabbix_proxy_unavailable_delay: 60
 zabbix_proxy_unreachable_delay: 15
 zabbix_proxy_timeout: 15
-#zabbix_proxy_trappertimeout: 300
+zabbix_proxy_trappertimeout: 300
 zabbix_proxy_debug_level: 1
 zabbix_proxy_logfile_size: 5
 
@@ -111,7 +111,7 @@ zabbix_proxy_allow_unsupported_db: 0
 
 # ==============================================================================
 # Seção IV: Configurações do Zabbix Agent
-# Referência: https://git.rnp.br/.../zabbix_agent2.conf
+# Referência: https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_agent2.conf
 # ==============================================================================
 # --- Parâmetros de Conexão ---
 zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
