@@ -59,6 +59,54 @@
     - { path: "{{ zabbix_proxy_socket_dir }}" }
 
 # ==============================================================================
+# --- Geração e Configuração da Chave PSK para Criptografia ---
+# Esta seção gera uma chave PSK, cria o arquivo no servidor e define
+# as permissões de forma segura e idempotente.
+# ==============================================================================
+
+# 1. Verificar se o arquivo PSK já existe
+- name: Verificar status do arquivo PSK do proxy
+  ansible.builtin.stat:
+    path: "{{ zabbix_proxy_psk_file }}"
+  register: proxy_psk_file_status
+  changed_when: false
+
+# 2. Criar diretório para o arquivo PSK se não existir
+- name: Criar diretório para o arquivo PSK do proxy
+  ansible.builtin.file:
+    path: "{{ zabbix_proxy_psk_file | dirname }}"
+    state: directory
+    owner: zabbix
+    group: zabbix
+    mode: '0755'
+  when: not proxy_psk_file_status.stat.exists
+
+# 3. Gerar e Salvar o valor da chave PSK (somente se o arquivo não existir)
+- name: Gerar e salvar valor da chave PSK
+  ansible.builtin.shell: openssl rand -hex 32
+  register: proxy_psk_value
+  when: not proxy_psk_file_status.stat.exists
+  changed_when: true
+
+# 4. --- Exibir a chave PSK para o usuário ---
+# Imprime o valor da chave PSK na tela. Você precisa copiar este valor
+# e adicioná-lo manualmente na interface web do Zabbix.
+- name: Exibir valor da chave PSK
+  ansible.builtin.debug:
+    msg: "VALOR DA CHAVE PSK: {{ proxy_psk_value.stdout }}"
+  when: not proxy_psk_file_status.stat.exists
+
+# 5. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
+- name: Criar arquivo PSK e definir permissões
+  ansible.builtin.copy:
+    content: "{{ proxy_psk_value.stdout }}"
+    dest: "{{ zabbix_proxy_psk_file }}"
+    owner: zabbix
+    group: zabbix
+    mode: '0600'
+  when: not proxy_psk_file_status.stat.exists
+
+# ==============================================================================
 # --- Aplicar configuração do Zabbix Proxy ---
 # O template 'zabbix_proxy.conf.j2' preenche o arquivo com os valores.
 # A diretiva 'notify' aciona o handler 'Reiniciar Zabbix Proxy'.
