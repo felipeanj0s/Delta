@@ -78,7 +78,18 @@
     url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
     method: POST
     body_format: json
-    body: '{"jsonrpc": "2.0", "method": "host.get", "params": {"filter": {"host": ["{{ zabbix_agent_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
+    body: |
+      {
+        "jsonrpc": "2.0",
+        "method": "host.get",
+        "params": {
+          "filter": {
+            "host": ["{{ zabbix_agent_hostname | to_json }}"]
+          }
+        },
+        "auth": "{{ zabbix_api_token | to_json }}",
+        "id": 1
+      }
   register: zabbix_agent_host_id
   delegate_to: localhost
   run_once: true
@@ -89,7 +100,31 @@
     url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
     method: POST
     body_format: json
-    body: '{"jsonrpc": "2.0", "method": "host.create", "params": {"host": "{{ zabbix_agent_hostname }}", "interfaces": [{"type": 1, "main": 1, "useip": 1, "ip": "{{ pop_network_ipv4_address | ipaddr('address') }}", "dns": "", "port": "10050"}], "groups": [{"groupid": "2"}]}, "auth": "{{ zabbix_api_token }}", "id": 1}'  # Ajuste groupid conforme necessário
+    body: |
+      {
+        "jsonrpc": "2.0",
+        "method": "host.create",
+        "params": {
+          "host": "{{ zabbix_agent_hostname | to_json }}",
+          "interfaces": [
+            {
+              "type": 1,
+              "main": 1,
+              "useip": 1,
+              "ip": "{{ (pop_network_ipv4_address | ipaddr('address')) | to_json }}",
+              "dns": "",
+              "port": "10050"
+            }
+          ],
+          "groups": [
+            {
+              "groupid": "2"
+            }
+          ]
+        },
+        "auth": "{{ zabbix_api_token | to_json }}",
+        "id": 1
+      }
   when: zabbix_agent_host_id.json.result | default([]) | length == 0
   delegate_to: localhost
   run_once: true
@@ -99,7 +134,18 @@
     url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
     method: POST
     body_format: json
-    body: '{"jsonrpc": "2.0", "method": "host.get", "params": {"filter": {"host": ["{{ zabbix_agent_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
+    body: |
+      {
+        "jsonrpc": "2.0",
+        "method": "host.get",
+        "params": {
+          "filter": {
+            "host": ["{{ zabbix_agent_hostname | to_json }}"]
+          }
+        },
+        "auth": "{{ zabbix_api_token | to_json }}",
+        "id": 1
+      }
   register: zabbix_agent_host_id
   when: zabbix_agent_host_id.json.result | default([]) | length == 0
   delegate_to: localhost
@@ -110,7 +156,20 @@
     url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
     method: POST
     body_format: json
-    body: '{"jsonrpc": "2.0", "method": "host.update", "params": {"hostid": "{{ zabbix_agent_host_id.json.result[0].hostid }}", "tls_connect": 2, "tls_accept": 2, "tls_psk_identity": "{{ zabbix_agent_psk_identity }}", "tls_psk": "{{ effective_agent_psk_value }}"}, "auth": "{{ zabbix_api_token }}", "id": 2}'
+    body: |
+      {
+        "jsonrpc": "2.0",
+        "method": "host.update",
+        "params": {
+          "hostid": "{{ zabbix_agent_host_id.json.result[0].hostid | to_json }}",
+          "tls_connect": 2,
+          "tls_accept": 2,
+          "tls_psk_identity": "{{ zabbix_agent_psk_identity | to_json }}",
+          "tls_psk": "{{ effective_agent_psk_value | to_json }}"
+        },
+        "auth": "{{ zabbix_api_token | to_json }}",
+        "id": 2
+      }
   delegate_to: localhost
   run_once: true
 
