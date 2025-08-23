@@ -1,46 +1,30 @@
 ---
-# ==============================================================================
-# Handlers da Role 'network_security'
+#========================================================================
+# Handlers da Role 'net_security'
 # Arquivo: roles/net_security/handlers/main.yml
-# Descrição:
-#   Handlers responsáveis por aplicar ações após notificações das tasks,
-#   como reiniciar serviços e aplicar configurações.
 # ==============================================================================
 
-# ==============================================================================
-# --- Reiniciar serviço de rede (Debian) ---
-# Reinicia o serviço de 'networking' para aplicar as configurações no arquivo
-# /etc/network/interfaces.
-# ==============================================================================
 - name: Reiniciar Networking
   ansible.builtin.systemd:
-    name: networking
+    name: systemd-networkd
     state: restarted
 
-# ==============================================================================
-# --- Reiniciar serviço Fail2Ban ---
-# Reinicia o serviço fail2ban para aplicar as novas regras e configurações.
-# ==============================================================================
 - name: Reiniciar Fail2Ban
   ansible.builtin.systemd:
     name: fail2ban
     state: restarted
     enabled: yes
 
-# ==============================================================================
-# --- Reiniciar serviço SSH ---
-# Reinicia o serviço sshd para aplicar alterações na configuração do SSH.
-# ==============================================================================
 - name: Reiniciar SSH
   ansible.builtin.systemd:
     name: sshd
     state: restarted
     enabled: yes
 
-# ==============================================================================
-# --- Atualizar MOTD ---
-# Roda os scripts no diretório /etc/update-motd.d/ para gerar o novo MOTD.
-# ==============================================================================
+- name: Reiniciar UFW
+  ansible.builtin.ufw:
+    state: reloaded
+
 - name: Atualizar MOTD
   ansible.builtin.command: run-parts /etc/update-motd.d
   changed_when: true
