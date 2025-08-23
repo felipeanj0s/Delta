@@ -15,8 +15,8 @@ zabbix_agent_hostname: "ce-rnp-sv-vm-zabbix-proxy01-agent"
 # --- Informações de rede do PoP-CE. Usadas para configurar a interface de rede ---
 # ==============================================================================
 # Os dados abaixo são do PoP-CE
-pop_network_interface: "enX1"
-pop_network_ipv4_address: "192.168.0.217/24"
+pop_network_interface: "enX2"
+pop_network_ipv4_address: "192.168.0.17/24"
 pop_network_ipv6_address: ""
 pop_network_ipv4_gateway: "192.168.0.9"
 pop_network_ipv6_gateway: ""
