@@ -1,0 +1,28 @@
+---
+
+# ==============================================================================
+# Task para a Role 'zabbix_server_register_proxy'
+# Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
+# ==============================================================================
+
+
+- name: API | Registrar este Proxy no Zabbix Server
+  community.zabbix.zabbix_proxy:
+    server_url: "{{ zabbix_server_url }}"
+    login_token: "{{ zabbix_api_token }}"
+    proxy_name: "{{ zabbix_proxy_hostname }}"
+    status: "active"
+    description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
+    tls_connect: "psk"
+    tls_accept: "psk"
+    # As variáveis abaixo vêm diretamente dos fatos criados pela role 'zabbix_proxy'
+    # porque estamos rodando tudo na mesma "jogada" (play).
+    tls_psk_identity: "{{ proxy_api_psk_identity }}"
+    tls_psk: "{{ proxy_api_psk_key }}"
+    state: present
+  # A chamada de API é feita a partir da máquina que está rodando o playbook.
+  delegate_to: localhost
+  # Garante que, mesmo que o playbook rode em múltiplos hosts, esta tarefa só execute uma vez.
+  run_once: true
+  # Condição: só tenta registrar se uma nova chave foi gerada pela role zabbix_proxy.
+  when: proxy_api_psk_key is defined

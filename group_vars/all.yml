@@ -20,6 +20,11 @@ zabbix_server_ip: "192.168.0.208"
 # IPs dos servidores Zabbix para checagens ativas.
 zabbix_active_server_ips:
   - "192.168.0.208"
+
+
+zabbix_server_url: "http://192.168.0.208/zabbix" # URL do seu Zabbix Server
+zabbix_api_token: "5261f552d7b11ad7da624c53b20b917b09eae2d1ab3c4fc4714a5f1432f8d341"
+
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================

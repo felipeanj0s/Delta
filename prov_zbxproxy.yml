@@ -5,11 +5,25 @@
 # A ordem das roles importa.
 # ============================================================================================================================
 ---
-- name: Provisionar Zabbix Proxy e configurações
-  hosts: ce
+- name: Provisionar e Registrar Zabbix Proxy 
+  hosts: all
   become: yes
+  vars_files:
+    # O vault é carregado no início e suas variáveis ficam disponíveis para todas as roles.
+    - group_vars/vault.yml
+
   roles:
-    - net_security
-    - zabbix_proxy
-    - zabbix_agent
- 
+    # Passo 1: Descobre a localidade e carrega as variáveis (ex: group_vars/ce.yml)
+    - role: setup_context
+
+    # Passo 2: Configura a rede e segurança na máquina
+    - role: net_security
+
+    # Passo 3: Instala o proxy e CRIA os fatos com a chave PSK
+    - role: zabbix_proxy
+
+    # Passo 4: Instala o agent
+    - role: zabbix_agent
+
+    # Passo 5: USA os fatos criados no Passo 3 para se registrar na API
+    - role: zabbix_server_register_proxy

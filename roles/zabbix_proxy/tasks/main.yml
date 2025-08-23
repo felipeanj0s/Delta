@@ -6,18 +6,12 @@
 
 # ==============================================================================
 # --- Instalação do Repositório Zabbix ---
-# Esta tarefa verifica se o arquivo do repositório Zabbix já existe no sistema.
 # ==============================================================================
 - name: Verificar se o repositório Zabbix já está instalado
   ansible.builtin.stat:
     path: "/etc/apt/sources.list.d/zabbix.list"
   register: zabbix_repo_status
 
-# ==============================================================================
-# --- Baixar e instalar o pacote .deb do repositório Zabbix ---
-# Baixa e instala o pacote .deb do repositório Zabbix, mas apenas se a verificação
-# anterior (`stat`) confirmar que o arquivo não existe.
-# ==============================================================================
 - name: Baixar e instalar o pacote do repositório Zabbix
   ansible.builtin.apt:
     deb: "{{ zabbix_repo_url }}"
@@ -25,27 +19,17 @@
   when: not zabbix_repo_status.stat.exists
 
 # ==============================================================================
-# --- Atualizar cache de pacotes APT ---
-# Isso é crucial para que o sistema saiba que o novo repositório foi adicionado
-# e possa encontrar o pacote do Zabbix Proxy.
+# --- Instalação e Configuração do Zabbix Proxy ---
 # ==============================================================================
 - name: Atualizar cache de pacotes
   ansible.builtin.apt:
     update_cache: yes
 
-# ==============================================================================
-# --- Instalação e Configuração do Zabbix Proxy ---
-# Instala o pacote do Zabbix Proxy com suporte a SQLite, conforme definido na variável.
-# ==============================================================================
 - name: Instalar Zabbix Proxy com SQLite
   ansible.builtin.apt:
     name: "{{ zabbix_proxy_package }}"
     state: present
 
-# ==============================================================================
-# --- Criar diretórios necessários ---
-# Cria os diretórios para o banco de dados e o socket do Zabbix Proxy.
-# ==============================================================================
 - name: Criar diretórios necessários
   ansible.builtin.file:
     path: "{{ item.path }}"
@@ -60,8 +44,7 @@
 
 # ==============================================================================
 # --- Geração e Configuração da Chave PSK para Criptografia ---
-# Esta seção gera uma chave PSK, cria o arquivo no servidor e define
-# as permissões de forma segura e idempotente.
+# Esta seção gera a chave PSK e a registra como um "fato" para automação da API.
 # ==============================================================================
 
 # 1. Verificar se o arquivo PSK já existe
@@ -81,25 +64,30 @@
     mode: '0755'
   when: not proxy_psk_file_status.stat.exists
 
-# 3. Gerar e Salvar o valor da chave PSK (somente se o arquivo não existir)
-- name: Gerar e salvar valor da chave PSK
+# 3. Gerar o valor da chave PSK (somente se o arquivo não existir)
+- name: Gerar valor da chave PSK
   ansible.builtin.shell: openssl rand -hex 32
-  register: proxy_psk_value
+  register: proxy_psk_value_raw
   when: not proxy_psk_file_status.stat.exists
   changed_when: true
 
-# 4. --- Exibir a chave PSK para o usuário ---
-# Imprime o valor da chave PSK na tela. Você precisa copiar este valor
-# e adicioná-lo manualmente na interface web do Zabbix.
-- name: Exibir valor da chave PSK
-  ansible.builtin.debug:
-    msg: "VALOR DA CHAVE PSK: {{ proxy_psk_value.stdout }}"
+# 4. (NOVO) Registrar a identidade e a chave PSK como fatos para uso pela API
+- name: Registrar informações do Proxy para a API
+  ansible.builtin.set_fact:
+    proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
+    proxy_api_psk_key: "{{ proxy_psk_value_raw.stdout }}"
   when: not proxy_psk_file_status.stat.exists
 
-# 5. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
+# 5. Exibir a chave PSK para o usuário (para fins de debug)
+- name: Exibir valor da chave PSK gerada
+  ansible.builtin.debug:
+    msg: "VALOR DA CHAVE PSK: {{ proxy_psk_value_raw.stdout }}"
+  when: not proxy_psk_file_status.stat.exists
+
+# 6. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
 - name: Criar arquivo PSK e definir permissões
   ansible.builtin.copy:
-    content: "{{ proxy_psk_value.stdout }}"
+    content: "{{ proxy_psk_value_raw.stdout }}"
     dest: "{{ zabbix_proxy_psk_file }}"
     owner: zabbix
     group: zabbix
@@ -108,8 +96,6 @@
 
 # ==============================================================================
 # --- Aplicar configuração do Zabbix Proxy ---
-# O template 'zabbix_proxy.conf.j2' preenche o arquivo com os valores.
-# A diretiva 'notify' aciona o handler 'Reiniciar Zabbix Proxy'.
 # ==============================================================================
 - name: Aplicar configuração do Zabbix Proxy
   ansible.builtin.template:
@@ -122,7 +108,6 @@
 
 # ==============================================================================
 # --- Gestão do Serviço ---
-# Garante que o serviço está habilitado para iniciar e que ele está rodando.
 # ==============================================================================
 - name: Habilitar e iniciar Zabbix Proxy
   ansible.builtin.systemd:
