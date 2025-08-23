@@ -3,8 +3,6 @@
 # Task para a Role 'setup_context'
 # Arquivo: roles/setup_context/tasks/main.yml
 # ==============================================================================
-
-
 - name: Setup | Determinar a localidade a partir do grupo do inventário
   ansible.builtin.set_fact:
     # Pega o primeiro grupo ao qual o host pertence (ex: 'ce', 'rj', 'sp')

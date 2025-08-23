@@ -5,13 +5,9 @@
 # A ordem das roles importa.
 # ============================================================================================================================
 ---
-- name: Provisionar e Registrar Zabbix Proxy 
+- name: Provisionar e Registrar Zabbix Proxy de ponta a ponta
   hosts: all
   become: yes
-  vars_files:
-    # O vault é carregado no início e suas variáveis ficam disponíveis para todas as roles.
-    - group_vars/vault.yml
-
   roles:
     # Passo 1: Descobre a localidade e carrega as variáveis (ex: group_vars/ce.yml)
     - role: setup_context
@@ -25,5 +21,5 @@
     # Passo 4: Instala o agent
     - role: zabbix_agent
 
-    # Passo 5: USA os fatos criados no Passo 3 para se registrar na API
+    # Passo 5: USA os fatos criados no Passo 3 para se registrar na API do Zabbix Server
     - role: zabbix_server_register_proxy
