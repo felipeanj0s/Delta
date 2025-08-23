@@ -1,4 +1,6 @@
 ---
+
+
 # ==============================================================================
 # Tasks da Role 'net_security'
 # Arquivo: roles/net_security/tasks/main.yml
@@ -16,15 +18,6 @@
   ansible.builtin.template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Reiniciar SSH
-
-- name: Configurar SSH com o template sshd.local
-  ansible.builtin.template:
-    src: sshd.local.j2
-    dest: /etc/ssh/sshd_config.d/sshd.local
     owner: root
     group: root
     mode: '0644'
@@ -117,3 +110,4 @@
     name: fail2ban
     enabled: yes
     state: started
+=
