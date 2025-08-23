@@ -13,8 +13,8 @@
     proxy_name: "{{ zabbix_proxy_hostname }}"
     status: "active"
     description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-    tls_connect: "psk"
-    tls_accept: "psk"
+    tls_connect: "{{ zabbix_proxy_tls_connect }}"  
+    tls_accept: "{{ zabbix_proxy_tls_accept }}"  
     # As variáveis abaixo vêm diretamente dos fatos criados pela role 'zabbix_proxy'
     # porque estamos rodando tudo na mesma "jogada" (play).
     tls_psk_identity: "{{ proxy_api_psk_identity }}"
