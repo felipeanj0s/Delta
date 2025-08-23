@@ -12,7 +12,7 @@ source /etc/network/interfaces.d/*
 auto lo
 iface lo inet loopback
 
-# A interface de rede primária (IPv4 e IPv6)
+# A interface de rede primária
 auto {{ pop_network_interface }}
 
 # Configuração IPv4
@@ -22,7 +22,10 @@ iface {{ pop_network_interface }} inet static
   gateway {{ pop_network_ipv4_gateway }}
   dns-nameservers {{ pop_network_dns_list | join(' ') }}
 
-# Configuração IPv6
+{# --- Configuração IPv6 Condicional --- #}
+{# Este bloco só será adicionado se a variável pop_network_ipv6_address estiver definida, não for vazia e não contiver apenas espaços. #}
+{% if pop_network_ipv6_address and pop_network_ipv6_address.strip() %}
 iface {{ pop_network_interface }} inet6 static
   address {{ pop_network_ipv6_address | ipaddr('address') }}
   gateway {{ pop_network_ipv6_gateway }}
+{% endif %}

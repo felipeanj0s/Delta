@@ -17,7 +17,7 @@ zabbix_agent_hostname: "ce-rnp-sv-vm-zabbix-proxy01-agent"
 # Os dados abaixo são do PoP-CE
 pop_network_interface: "enX1"
 pop_network_ipv4_address: "192.168.0.217/24"
-pop_network_ipv6_address: " "
+pop_network_ipv6_address: ""
 pop_network_ipv4_gateway: "192.168.0.9"
 pop_network_ipv6_gateway: ""
 # Lista de servidores DNS para o PoP-CE.
