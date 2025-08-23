@@ -1,5 +1,4 @@
 ---
-
 # ==============================================================================
 # Task para a Role 'zabbix_proxy'
 # Arquivo: roles/zabbix_proxy/tasks/main.yml
@@ -7,12 +6,18 @@
 
 # ==============================================================================
 # --- Instalação do Repositório Zabbix ---
+# Esta tarefa verifica se o arquivo do repositório Zabbix já existe no sistema.
 # ==============================================================================
 - name: Verificar se o repositório Zabbix já está instalado
   ansible.builtin.stat:
     path: "/etc/apt/sources.list.d/zabbix.list"
   register: zabbix_repo_status
 
+# ==============================================================================
+# --- Baixar e instalar o pacote .deb do repositório Zabbix ---
+# Baixa e instala o pacote .deb do repositório Zabbix, mas apenas se a verificação
+# anterior (`stat`) confirmar que o arquivo não existe.
+# ==============================================================================
 - name: Baixar e instalar o pacote do repositório Zabbix
   ansible.builtin.apt:
     deb: "{{ zabbix_repo_url }}"
@@ -20,12 +25,18 @@
   when: not zabbix_repo_status.stat.exists
 
 # ==============================================================================
-# --- Atualizar cache de pacotes e Instalar Pacotes ---
+# --- Atualizar cache de pacotes APT ---
+# Isso é crucial para que o sistema saiba que o novo repositório foi adicionado
+# e possa encontrar o pacote do Zabbix Proxy.
 # ==============================================================================
 - name: Atualizar cache de pacotes
   ansible.builtin.apt:
     update_cache: yes
 
+# ==============================================================================
+# --- Instalação e Configuração do Zabbix Proxy ---
+# Instala o pacote do Zabbix Proxy com suporte a SQLite, conforme definido na variável.
+# ==============================================================================
 - name: Instalar Zabbix Proxy com SQLite
   ansible.builtin.apt:
     name: "{{ zabbix_proxy_package }}"
@@ -33,6 +44,7 @@
 
 # ==============================================================================
 # --- Criar diretórios necessários ---
+# Cria os diretórios para o banco de dados e o socket do Zabbix Proxy.
 # ==============================================================================
 - name: Criar diretórios necessários
   ansible.builtin.file:
@@ -47,8 +59,9 @@
     - { path: "{{ zabbix_proxy_socket_dir }}" }
 
 # ==============================================================================
-# --- Geração e Configuração da Chave PSK  ---
-# Garante que o valor da PSK esteja sempre disponível para as tasks de API.
+# --- Geração e Configuração da Chave PSK para Criptografia ---
+# Esta seção gera uma chave PSK, cria o arquivo no servidor e define
+# as permissões de forma segura e idempotente.
 # ==============================================================================
 
 # 1. Verificar se o arquivo PSK já existe
@@ -66,36 +79,27 @@
     owner: zabbix
     group: zabbix
     mode: '0755'
+  when: not proxy_psk_file_status.stat.exists
 
-# 3. Gerar um novo valor de chave PSK (fica apenas na memória)
-- name: Gerar novo valor da chave PSK
+# 3. Gerar e Salvar o valor da chave PSK (somente se o arquivo não existir)
+- name: Gerar e salvar valor da chave PSK
   ansible.builtin.shell: openssl rand -hex 32
-  register: proxy_psk_value_generated
+  register: proxy_psk_value
   when: not proxy_psk_file_status.stat.exists
   changed_when: true
 
-# 4. Ler o valor da chave PSK existente, se houver
-- name: Ler valor da chave PSK existente
-  ansible.builtin.slurp:
-    src: "{{ zabbix_proxy_psk_file }}"
-  register: proxy_psk_value_existing
-  when: proxy_psk_file_status.stat.exists
-
-# 5. Definir o valor efetivo da PSK para ser usado nas tasks seguintes
-- name: Definir o valor efetivo da PSK do proxy
-  ansible.builtin.set_fact:
-    effective_proxy_psk_value: "{{ proxy_psk_value_generated.stdout | default(proxy_psk_value_existing.content | b64decode) }}"
-
-# 6. Exibir a chave PSK (somente se debug_psk for true)
-- name: Exibir chave PSK do proxy (apenas para depuração)
+# 4. --- Exibir a chave PSK para o usuário ---
+# Imprime o valor da chave PSK na tela. Você precisa copiar este valor
+# e adicioná-lo manualmente na interface web do Zabbix.
+- name: Exibir valor da chave PSK
   ansible.builtin.debug:
-    msg: "Chave PSK do Zabbix Proxy ({{ zabbix_proxy_psk_identity }}): {{ effective_proxy_psk_value }}"
-  when: debug_psk | bool
+    msg: "VALOR DA CHAVE PSK: {{ proxy_psk_value.stdout }}"
+  when: not proxy_psk_file_status.stat.exists
 
-# 7. Criar o arquivo PSK e definir permissões (somente na primeira execução)
+# 5. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
 - name: Criar arquivo PSK e definir permissões
   ansible.builtin.copy:
-    content: "{{ effective_proxy_psk_value }}"
+    content: "{{ proxy_psk_value.stdout }}"
     dest: "{{ zabbix_proxy_psk_file }}"
     owner: zabbix
     group: zabbix
@@ -103,52 +107,9 @@
   when: not proxy_psk_file_status.stat.exists
 
 # ==============================================================================
-# --- Configuração Automática da PSK no Zabbix Server via API ---
-# Elimina a necessidade de configuração manual na interface web.
-# ==============================================================================
-- name: API | Obter ID do proxy pelo hostname
-  ansible.builtin.uri:
-    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
-    method: POST
-    body_format: json
-    body: '{"jsonrpc": "2.0", "method": "proxy.get", "params": {"filter": {"host": ["{{ zabbix_proxy_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
-  register: zabbix_proxy_id
-  delegate_to: localhost
-  run_once: true
-  ignore_errors: true  # Permite continuar se não encontrado
-
-- name: API | Criar proxy se não existir
-  ansible.builtin.uri:
-    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
-    method: POST
-    body_format: json
-    body: '{"jsonrpc": "2.0", "method": "proxy.create", "params": {"host": "{{ zabbix_proxy_hostname }}", "status": 5}, "auth": "{{ zabbix_api_token }}", "id": 1}'  # Status 5 para proxy ativo; ajuste se necessário
-  when: zabbix_proxy_id.json.result | default([]) | length == 0
-  delegate_to: localhost
-  run_once: true
-
-- name: API | Obter ID do proxy novamente após criação
-  ansible.builtin.uri:
-    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
-    method: POST
-    body_format: json
-    body: '{"jsonrpc": "2.0", "method": "proxy.get", "params": {"filter": {"host": ["{{ zabbix_proxy_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
-  register: zabbix_proxy_id
-  when: zabbix_proxy_id.json.result | default([]) | length == 0
-  delegate_to: localhost
-  run_once: true
-
-- name: API | Aplicar configuração PSK no proxy
-  ansible.builtin.uri:
-    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
-    method: POST
-    body_format: json
-    body: '{"jsonrpc": "2.0", "method": "proxy.update", "params": {"proxyid": "{{ zabbix_proxy_id.json.result[0].proxyid }}", "tls_connect": 2, "tls_accept": 2, "tls_psk_identity": "{{ zabbix_proxy_psk_identity }}", "tls_psk": "{{ effective_proxy_psk_value }}"}, "auth": "{{ zabbix_api_token }}", "id": 2}'
-  delegate_to: localhost
-  run_once: true
-
-# ==============================================================================
 # --- Aplicar configuração do Zabbix Proxy ---
+# O template 'zabbix_proxy.conf.j2' preenche o arquivo com os valores.
+# A diretiva 'notify' aciona o handler 'Reiniciar Zabbix Proxy'.
 # ==============================================================================
 - name: Aplicar configuração do Zabbix Proxy
   ansible.builtin.template:
@@ -160,16 +121,8 @@
   notify: Reiniciar Zabbix Proxy
 
 # ==============================================================================
-# --- Backup Simples do Banco SQLite (Exemplo Básico) ---
-- name: Configurar backup diário do SQLite DB via cron
-  ansible.builtin.cron:
-    name: "Backup Zabbix Proxy DB"
-    minute: "0"
-    hour: "2"
-    job: "cp {{ zabbix_proxy_dbname }} {{ zabbix_proxy_dbname }}.backup.$(date +\\%Y\\%m\\%d)"
-
-# ==============================================================================
 # --- Gestão do Serviço ---
+# Garante que o serviço está habilitado para iniciar e que ele está rodando.
 # ==============================================================================
 - name: Habilitar e iniciar Zabbix Proxy
   ansible.builtin.systemd:

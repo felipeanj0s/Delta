@@ -25,9 +25,4 @@ iface {{ pop_network_interface }} inet static
 # Configuração IPv6
 iface {{ pop_network_interface }} inet6 static
   address {{ pop_network_ipv6_address | ipaddr('address') }}
-  netmask {{ pop_network_ipv6_address | ipaddr('netmask') }}  
-
-# Rotas personalizadas
-{% for route in pop_network_routes %}
-post-up ip route add {{ route.to }} via {{ route.via }} metric {{ route.metric | default(100) }}
-{% endfor %}
+  gateway {{ pop_network_ipv6_gateway }}
