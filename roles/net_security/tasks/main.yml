@@ -1,167 +1,110 @@
 ---
 # ==============================================================================
-# Tasks da Role 'network_security'
+# Tasks da Role 'net_security'
 # Arquivo: roles/net_security/tasks/main.yml
-# Descrição:
-#   Este playbook orquestra a aplicação de configurações essenciais de segurança
-#   e rede no servidor, garantindo um estado inicial seguro e funcional.
-#   As tarefas incluem:
-#    - Configuração do nome do host (`hostname`).
-#    - Aplicação da configuração de rede (`ifupdown` no Debian).
-#    - Instalação e ativação de serviços de segurança (`UFW` e `Fail2Ban`).
-#    - Personalização da porta SSH e outras diretivas de segurança.
-#    - Aplicação granular de regras de firewall de entrada e saída.
-#   Todas as variáveis utilizadas são gerenciadas de forma centralizada
-#   no arquivo `group_vars/all.yml`.
+# Descrição: Configurações de segurança de rede, incluindo SSH, UFW, e Fail2Ban
 # ==============================================================================
 
-# ==============================================================================
-# --- Configuração do Hostname ---
-# Define o nome da máquina para facilitar a identificação na rede e no
-# sistema de monitoramento Zabbix.
-# ==============================================================================
-- name: Configurar o hostname da máquina
-  ansible.builtin.hostname:
-    name: "{{ zabbix_proxy_hostname }}"
-
-# ==============================================================================
-# --- Configuração de Rede (Debian) ---
-# Gera o arquivo de configuração de rede para o Debian (`/etc/network/interfaces`)
-# a partir do template `interfaces.j2`.
-# ==============================================================================
-- name: Configurar rede via interfaces (Debian)
-  ansible.builtin.template:
-    src: interfaces.j2
-    dest: "/etc/network/interfaces"
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Reiniciar Networking
-
-# ==============================================================================
-# --- Validação da Configuração de Rede ---
-- name: Validar arquivo de interfaces de rede
-  ansible.builtin.command: ifup --no-act {{ pop_network_interface }}
-  changed_when: false
-  register: ifup_test
-  failed_when: ifup_test.rc != 0
-
-# ==============================================================================
-# --- Configuração do Banner de Acesso ---
-# Aplica um template para criar o banner de aviso no login SSH.
-# O banner é dinâmico, usando o nome do host via variável.
-# ==============================================================================
-- name: Criar banner de aviso (issue.net)
-  ansible.builtin.template:
-    src: issue.net.j2
-    dest: "/etc/issue.net"
-    owner: root
-    group: root
-    mode: "0644"
-
-# ==============================================================================
-# --- Configuração do MOTD (Message of the Day) ---
-# Adiciona um script personalizado para exibir informações do sistema
-# após o login.
-# ==============================================================================
-- name: Criar script personalizado para MOTD
-  ansible.builtin.template:
-    src: "motd_info.j2"
-    dest: "/etc/update-motd.d/99-ansible-info"
-    owner: root
-    group: root
-    mode: "0755"
-  notify: Atualizar MOTD
-
-# ==============================================================================
-# --- Instalação de Ferramentas de Segurança ---
-# Garante a presença dos pacotes `ufw` e `fail2ban`.
-# ==============================================================================
-- name: Instalar UFW e Fail2Ban
-  ansible.builtin.apt:
-    name:
-      - ufw
-      - fail2ban
+# --- Verificar se o SSH está instalado ---
+- name: Verificar se o SSH está instalado
+  ansible.builtin.package:
+    name: openssh-server
     state: present
-    update_cache: yes
 
-# ==============================================================================
-# --- Configuração da Porta SSH ---
-# Aplica um template para configurar a porta de escuta do SSH e outras diretivas.
-# ==============================================================================
-- name: Configurar a porta do SSH no sshd_config
+# --- Configurar SSH ---
+- name: Configurar SSH com o template sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
     owner: root
     group: root
-    mode: '0600'
-  notify:
-    - Reiniciar SSH
+    mode: '0644'
+  notify: Reiniciar SSH
 
-# ==============================================================================
-# --- Validação da Configuração SSH ---
+- name: Configurar SSH com o template sshd.local
+  ansible.builtin.template:
+    src: sshd.local.j2
+    dest: /etc/ssh/sshd.local
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reiniciar SSH
+
+# --- Validar configuração do SSH ---
 - name: Validar configuração do SSH
   ansible.builtin.command: sshd -t
   changed_when: false
   register: sshd_test
   failed_when: sshd_test.rc != 0
 
-# ==============================================================================
-# --- Configuração de Política Padrão do UFW (Outbound Deny) ---
+# --- Habilitar e iniciar o serviço SSH ---
+- name: Habilitar e iniciar SSH
+  ansible.builtin.systemd:
+    name: sshd
+    enabled: yes
+    state: started
+
+# --- Verificar se o UFW está instalado ---
+- name: Verificar se o UFW está instalado
+  ansible.builtin.package:
+    name: ufw
+    state: present
+
+# --- Habilitar IPv6 no UFW ---
+- name: Configurar UFW para suportar IPv6
+  ansible.builtin.lineinfile:
+    path: /etc/default/ufw
+    regexp: '^IPV6='
+    line: 'IPV6=yes'
+  notify: Reiniciar UFW
+
+# --- Configurar política padrão do UFW para entrada (deny) ---
+- name: Configurar política padrão do UFW para entrada (deny)
+  ansible.builtin.ufw:
+    default: deny
+    direction: incoming
+
+# --- Configurar política padrão do UFW para saída (deny) ---
 - name: Configurar política padrão do UFW para saída (deny)
   ansible.builtin.ufw:
-    direction: out
-    policy: deny
+    default: deny
+    direction: outgoing
 
-# ==============================================================================
-# --- Configuração de Regras do UFW (Inbound) ---
-# Aplica as regras de firewall para tráfego de entrada.
-# ==============================================================================
-- name: Configurar regras UFW (entrada)
+# --- Aplicar regras do UFW definidas em group_vars ---
+- name: Aplicar regras do UFW
   ansible.builtin.ufw:
     rule: "{{ item.rule }}"
     from_ip: "{{ item.from | default(omit) }}"
     to_ip: "{{ item.to | default(omit) }}"
     port: "{{ item.port | default(omit) }}"
     proto: "{{ item.proto | default(omit) }}"
+    direction: "{{ item.direction | default('in') }}"
     comment: "{{ item.comment | default(omit) }}"
   loop: "{{ ufw_rules }}"
-  when: item.direction is not defined or item.direction == 'in'
+  when: ufw_rules is defined
 
-# ==============================================================================
-# --- Configuração de Regras do UFW (Outbound) ---
-# Aplica as regras de firewall para tráfego de saída.
-# ==============================================================================
-- name: Configurar regras UFW (saída)
-  ansible.builtin.ufw:
-    rule: "{{ item.rule }}"
-    direction: "{{ item.direction }}"
-    from_ip: "{{ item.from | default(omit) }}"
-    to_ip: "{{ item.to | default(omit) }}"
-    port: "{{ item.port | default(omit) }}"
-    proto: "{{ item.proto | default(omit) }}"
-    comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ ufw_rules }}"
-  when: item.direction is defined and item.direction == 'out'
-
-# ==============================================================================
-# --- Ativação do Firewall ---
-# Habilita o firewall `ufw` após a aplicação de todas as regras.
-# ==============================================================================
+# --- Habilitar UFW ---
 - name: Habilitar UFW
   ansible.builtin.ufw:
     state: enabled
 
-# ==============================================================================
-# --- Configuração do Fail2Ban para SSH ---
-# Copia o template de configuração do Fail2Ban para a jail 'sshd'.
-# ==============================================================================
-- name: Configurar Fail2Ban SSHD
+# --- Configurar Fail2Ban ---
+- name: Instalar Fail2Ban
+  ansible.builtin.package:
+    name: fail2ban
+    state: present
+
+- name: Configurar Fail2Ban para SSH
   ansible.builtin.template:
-    src: sshd.local.j2
-    dest: /etc/fail2ban/jail.d/sshd.local
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
     owner: root
     group: root
     mode: '0644'
   notify: Reiniciar Fail2Ban
+
+- name: Habilitar e iniciar Fail2Ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: yes
+    state: started

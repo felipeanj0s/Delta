@@ -1,0 +1,22 @@
+# ==============================================================================
+# Template de Configuração do Fail2Ban
+# Arquivo: roles/net_security/templates/jail.local.j2
+# Descrição: Configura a 'jail' para o serviço SSH, usando variáveis de group_vars
+#            para porta, tentativas máximas, tempo de banimento e IPs ignorados.
+# ==============================================================================
+
+[DEFAULT]
+bantime = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+
+[sshd]
+enabled = true
+port = {{ fail2ban_sshd_port }}
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = {{ fail2ban_maxretry }}
+findtime = {{ fail2ban_findtime }}
+bantime = {{ fail2ban_bantime }}
+# Ignora localhost, Zabbix Server, gateway, and DNS servers to prevent accidental bans
+ignoreip = 127.0.0.1/8 ::1 {{ zabbix_server_ip }} {{ pop_network_ipv4_gateway }} {{ pop_network_ipv6_gateway }} {{ pop_network_dns_list | join(' ') }}
