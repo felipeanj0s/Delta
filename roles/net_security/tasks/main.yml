@@ -1,6 +1,4 @@
 ---
-
-
 # ==============================================================================
 # Tasks da Role 'net_security'
 # Arquivo: roles/net_security/tasks/main.yml
@@ -110,4 +108,3 @@
     name: fail2ban
     enabled: yes
     state: started
-=
