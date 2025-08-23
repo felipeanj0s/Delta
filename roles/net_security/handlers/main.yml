@@ -42,4 +42,5 @@
 # Roda os scripts no diretório /etc/update-motd.d/ para gerar o novo MOTD.
 # ==============================================================================
 - name: Atualizar MOTD
-  ansible.builtin.command: /usr/bin/run-parts --regex '^[0-9]+-.*' /etc/update-motd.d/
+  ansible.builtin.command: run-parts /etc/update-motd.d
+  changed_when: true

@@ -6,8 +6,6 @@
 
 # ==============================================================================
 # --- Instalação do Zabbix Agent ---
-# Instala o pacote do Zabbix Agent, conforme definido na variável `zabbix_agent_package`.
-# O `update_cache: yes` garante que o cache de pacotes seja atualizado antes da instalação.
 # ==============================================================================
 - name: Instalar Zabbix Agent
   ansible.builtin.apt:
@@ -16,9 +14,8 @@
     update_cache: yes
 
 # ==============================================================================
-# --- Geração e Configuração da Chave PSK para Criptografia (Agent) ---
-# Esta seção gera uma chave PSK, cria o arquivo no servidor e define
-# as permissões de forma segura e idempotente.
+# --- Geração e Configuração da Chave PSK (Lógica Idempotente e Robusta) ---
+# Garante que o valor da PSK esteja sempre disponível para as tasks de API.
 # ==============================================================================
 
 # 1. Verificar se o arquivo PSK já existe
@@ -36,37 +33,89 @@
     owner: zabbix
     group: zabbix
     mode: '0755'
-  when: not agent_psk_file_status.stat.exists
 
-# 3. Gerar e Salvar o valor da chave PSK (somente se o arquivo não existir)
-- name: Gerar e salvar valor da chave PSK
+# 3. Gerar um novo valor de chave PSK (fica apenas na memória)
+- name: Gerar novo valor da chave PSK
   ansible.builtin.shell: openssl rand -hex 32
-  register: agent_psk_value
+  register: agent_psk_value_generated
   when: not agent_psk_file_status.stat.exists
   changed_when: true
 
-# 4. Exibir a chave PSK para o usuário (IMPORTANTE: você precisará deste valor)
-- name: Exibir valor da chave PSK do agente
-  ansible.builtin.debug:
-    msg: "VALOR DA CHAVE PSK DO AGENTE: {{ agent_psk_value.stdout }}"
-  when: not agent_psk_file_status.stat.exists
+# 4. Ler o valor da chave PSK existente, se houver
+- name: Ler valor da chave PSK existente
+  ansible.builtin.slurp:
+    src: "{{ zabbix_agent_psk_file }}"
+  register: agent_psk_value_existing
+  when: agent_psk_file_status.stat.exists
 
-# 5. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
+# 5. Definir o valor efetivo da PSK para ser usado nas tasks seguintes
+- name: Definir o valor efetivo da PSK do agente
+  ansible.builtin.set_fact:
+    effective_agent_psk_value: "{{ agent_psk_value_generated.stdout | default(agent_psk_value_existing.content | b64decode) }}"
+
+# 6. Exibir a chave PSK (somente se debug_psk for true)
+- name: Exibir chave PSK do agente (apenas para depuração)
+  ansible.builtin.debug:
+    msg: "Chave PSK do Zabbix Agent ({{ zabbix_agent_psk_identity }}): {{ effective_agent_psk_value }}"
+  when: debug_psk | bool
+
+# 7. Criar o arquivo PSK e definir permissões (somente na primeira execução)
 - name: Criar arquivo PSK e definir permissões
   ansible.builtin.copy:
-    content: "{{ agent_psk_value.stdout }}"
+    content: "{{ effective_agent_psk_value }}"
     dest: "{{ zabbix_agent_psk_file }}"
     owner: zabbix
     group: zabbix
     mode: '0600'
   when: not agent_psk_file_status.stat.exists
 
+# ==============================================================================
+# --- Configuração Automática da PSK no Zabbix Server via API ---
+# Pré-requisito: o Host já deve estar cadastrado no Zabbix Server.
+# ==============================================================================
+- name: API | Obter ID do host (agente) pelo hostname
+  ansible.builtin.uri:
+    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body: '{"jsonrpc": "2.0", "method": "host.get", "params": {"filter": {"host": ["{{ zabbix_agent_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
+  register: zabbix_agent_host_id
+  delegate_to: localhost
+  run_once: true
+  ignore_errors: true  # Permite continuar se não encontrado
+
+- name: API | Criar host (agente) se não existir
+  ansible.builtin.uri:
+    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body: '{"jsonrpc": "2.0", "method": "host.create", "params": {"host": "{{ zabbix_agent_hostname }}", "interfaces": [{"type": 1, "main": 1, "useip": 1, "ip": "{{ pop_network_ipv4_address | ipaddr('address') }}", "dns": "", "port": "10050"}], "groups": [{"groupid": "2"}]}, "auth": "{{ zabbix_api_token }}", "id": 1}'  # Ajuste groupid conforme necessário
+  when: zabbix_agent_host_id.json.result | default([]) | length == 0
+  delegate_to: localhost
+  run_once: true
+
+- name: API | Obter ID do host (agente) novamente após criação
+  ansible.builtin.uri:
+    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body: '{"jsonrpc": "2.0", "method": "host.get", "params": {"filter": {"host": ["{{ zabbix_agent_hostname }}"]}}, "auth": "{{ zabbix_api_token }}", "id": 1}'
+  register: zabbix_agent_host_id
+  when: zabbix_agent_host_id.json.result | default([]) | length == 0
+  delegate_to: localhost
+  run_once: true
+
+- name: API | Aplicar configuração PSK no host (agente)
+  ansible.builtin.uri:
+    url: "http://{{ zabbix_server_ip }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body: '{"jsonrpc": "2.0", "method": "host.update", "params": {"hostid": "{{ zabbix_agent_host_id.json.result[0].hostid }}", "tls_connect": 2, "tls_accept": 2, "tls_psk_identity": "{{ zabbix_agent_psk_identity }}", "tls_psk": "{{ effective_agent_psk_value }}"}, "auth": "{{ zabbix_api_token }}", "id": 2}'
+  delegate_to: localhost
+  run_once: true
 
 # ==============================================================================
 # --- Configuração do Zabbix Agent ---
-# Aplica o arquivo de configuração do agente (`zabbix_agent2.conf.j2`) no servidor.
-# Este template usa as variáveis para preencher a configuração.
-# O `notify` aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
 # ==============================================================================
 - name: Configurar Zabbix Agent
   ansible.builtin.template:
@@ -79,11 +128,9 @@
 
 # ==============================================================================
 # --- Gestão do Serviço ---
-# Garante que o serviço do agente está habilitado para iniciar com o sistema
-# e que ele está rodando. O nome do serviço é hard-coded.
 # ==============================================================================
 - name: Habilitar e iniciar Zabbix Agent
   ansible.builtin.systemd:
-    name: zabbix-agent2
+    name: "{{ zabbix_agent_service_name }}"
     enabled: yes
     state: started

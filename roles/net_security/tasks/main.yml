@@ -39,6 +39,14 @@
   notify: Reiniciar Networking
 
 # ==============================================================================
+# --- Validação da Configuração de Rede ---
+- name: Validar arquivo de interfaces de rede
+  ansible.builtin.command: ifup --no-act {{ pop_network_interface }}
+  changed_when: false
+  register: ifup_test
+  failed_when: ifup_test.rc != 0
+
+# ==============================================================================
 # --- Configuração do Banner de Acesso ---
 # Aplica um template para criar o banner de aviso no login SSH.
 # O banner é dinâmico, usando o nome do host via variável.
@@ -90,6 +98,21 @@
     mode: '0600'
   notify:
     - Reiniciar SSH
+
+# ==============================================================================
+# --- Validação da Configuração SSH ---
+- name: Validar configuração do SSH
+  ansible.builtin.command: sshd -t
+  changed_when: false
+  register: sshd_test
+  failed_when: sshd_test.rc != 0
+
+# ==============================================================================
+# --- Configuração de Política Padrão do UFW (Outbound Deny) ---
+- name: Configurar política padrão do UFW para saída (deny)
+  ansible.builtin.ufw:
+    direction: out
+    policy: deny
 
 # ==============================================================================
 # --- Configuração de Regras do UFW (Inbound) ---

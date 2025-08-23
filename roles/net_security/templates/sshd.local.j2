@@ -17,5 +17,5 @@ findtime = {{ fail2ban_findtime }}
 bantime = {{ fail2ban_bantime }}
 
 # IPs que não devem ser banidos. Inclui IPs do servidor Zabbix,
-# do gateway e dos servidores DNS, conforme as variáveis.
-ignoreip = 127.0.0.1/8 {{ zabbix_server_ip }} {{ pop_network_ipv4_gateway }} {{ pop_network_dns_list | join(' ') }}
+# do gateway e dos servidores DNS, conforme as variáveis. Suporte a IPv6 adicionado.
+ignoreip = 127.0.0.1/8 ::1 {{ zabbix_server_ip }} {{ pop_network_ipv4_gateway }} {{ pop_network_ipv6_gateway }} {{ pop_network_dns_list | join(' ') }}

@@ -34,6 +34,16 @@ PrintMotd no
 PrintLastLog yes
 TCPKeepAlive yes
 
+# --- Configurações de Ciphers, MACs e Kex para Segurança ---
+Ciphers aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512,hmac-sha2-256
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512
+
+# --- Configurações para Sessões Inativas ---
+ClientAliveInterval 300
+ClientAliveCountMax 3
+
+
 # --- Outras Configurações ---
 Banner /etc/issue.net
 AcceptEnv LANG LC_*

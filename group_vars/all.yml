@@ -1,3 +1,4 @@
+
 # ==============================================================================
 # GT Monitoramento 2025
 # Variáveis Globais do Projeto
@@ -22,6 +23,13 @@ zabbix_active_server_ips:
   - "200.237.196.218"
   - "200.237.196.219"
   - "[2801:80:a88:4082::2]"
+# Token da API Zabbix (sensível: use Ansible Vault para armazenar o valor real).
+# Exemplo: ansible-vault edit group_vars/vault.yml e adicione zabbix_api_token: "seu_token"
+# Inclua no playbook com --vault-id.
+zabbix_api_token: "{{ vault_zabbix_api_token }}"  
+# Controla se as chaves PSK devem ser exibidas durante a execução (use com cuidado em produção).
+debug_psk: false
+
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
@@ -52,6 +60,9 @@ pop_network_routes:
 # Seção III: Configurações do Zabbix Proxy
 # Referência: https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_proxy.conf
 # ==============================================================================
+# --- Diretório PSK Configurável ---
+zabbix_psk_dir: "/etc/zabbix/psk"
+
 # --- Caminhos de Arquivos ---
 zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db" # discordo de DBName=/tmp/zabbix_proxy.db, porque se a vm rebootar, esse arquivo será excluido
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
@@ -104,7 +115,7 @@ zabbix_proxy_logfile_size: 5
 zabbix_proxy_tls_connect: "psk"
 zabbix_proxy_tls_accept: "psk"
 zabbix_proxy_psk_identity: "zabbix-rnp-ger-proxy-01-psk"
-zabbix_proxy_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-proxy.psk"
+zabbix_proxy_psk_file: "{{ zabbix_psk_dir }}/zabbix-rnp-ger-proxy.psk"
 
 # --- Compatibilidade ---
 zabbix_proxy_allow_unsupported_db: 0
@@ -141,7 +152,7 @@ zabbix_agent_enable_remote_commands: 0
 zabbix_agent_tls_connect: "psk"
 zabbix_agent_tls_accept: "psk"
 zabbix_agent_psk_identity: "zabbix-rnp-ger-agent-psk"
-zabbix_agent_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-agent.psk"
+zabbix_agent_psk_file: "{{ zabbix_psk_dir }}/zabbix-rnp-ger-agent.psk"
 zabbix_agent_plugins_log_max_lines: 20
 zabbix_agent_plugins_docker_endpoint: "unix:///var/run/docker.sock"
 zabbix_agent_plugins_docker_timeout: 20
@@ -151,16 +162,23 @@ zabbix_agent_plugins_docker_timeout: 20
 # ==============================================================================
 # Configurações para Fail2Ban e UFW.
 fail2ban_sshd_port: "{{ ssh_port }}"
-fail2ban_maxretry: 10
-fail2ban_findtime: 10m
+fail2ban_maxretry: 5  # Reduzido para maior rigidez
+fail2ban_findtime: 5m  # Reduzido para maior rigidez
 fail2ban_bantime: 24h
 
 ufw_rules:
-  # Porta SSH liberada apenas para o gateway
+  # Porta SSH liberada apenas para o gateway (IPv4 e IPv6)
   - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "SSH - Gateway IPV4", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv6_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "SSH - Gateway IPV6", direction: 'in' }
 
-  # Porta Zabbix Agent liberada para o gateway
-  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Zabbix Agent - Gateway", direction: 'in' }
+  # Porta Zabbix Agent liberada para o gateway (IPv4 e IPv6)
+  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Zabbix Agent - Gateway IPV4", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv6_gateway }}", port: "10050", proto: "tcp", comment: "Zabbix Agent - Gateway IPV6", direction: 'in' }
 
-  # Porta Zabbix Proxy liberada para o gateway
-  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Zabbix Proxy - Gateway", direction: 'in' }
+  # Porta Zabbix Proxy liberada para o gateway (IPv4 e IPv6)
+  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Zabbix Proxy - Gateway IPV4", direction: 'in' }
+  - { rule: allow, from: "{{ pop_network_ipv6_gateway }}", port: "10051", proto: "tcp", comment: "Zabbix Proxy - Gateway IPV6", direction: 'in' }
+
+  # Regras de saída (Outbound) para Zabbix Server e DNS
+  - { rule: allow, to: "{{ zabbix_server_ip }}", port: "10051", proto: "tcp", comment: "Zabbix Proxy to Server", direction: 'out' }
+  - { rule: allow, to: "{{ pop_network_dns_list | join(' ') }}", port: "53", proto: "udp", comment: "DNS Outbound", direction: 'out' }
