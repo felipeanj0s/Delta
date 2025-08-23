@@ -16,12 +16,10 @@
 # Seção 0: Variáveis Globais
 # ==============================================================================
 # IP do Zabbix Server Central.
-zabbix_server_ip: "200.192.0.47"
+zabbix_server_ip: "192.168.0.208"
 # IPs dos servidores Zabbix para checagens ativas.
 zabbix_active_server_ips:
-  - "200.237.196.218"
-  - "200.237.196.219"
-  - "[2801:80:a88:4082::2]"
+  - "192.168.0.208"
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
