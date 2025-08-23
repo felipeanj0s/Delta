@@ -2,8 +2,33 @@
 # GT Monitoramento 2025
 # Tasks da Role 'zabbix_server_register_proxy'
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
+# Descrição: Esta role finaliza o processo de automação, registrando o proxy
+#            na API do Zabbix Server. Ela é autossuficiente, instalando
+#            suas próprias dependências (pip e a biblioteca zabbix-api)
+#            antes de executar a chamada de API.
+# Versão: 4.1
+# Data: 2025-08-23
+# Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br>
 # ==============================================================================
 ---
+# Passo 1: Garantir que o PIP, a ferramenta para instalar bibliotecas Python, esteja presente no sistema.
+- name: Dependências | Garantir que o gerenciador de pacotes PIP para Python 3 esteja instalado
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
+  # Esta tarefa precisa rodar com 'become' para instalar pacotes do sistema.
+  become: yes
+
+# Passo 2: Usar o PIP para garantir que a biblioteca zabbix-api esteja instalada.
+- name: Dependências | Garantir que a biblioteca zabbix-api do Python esteja instalada
+  ansible.builtin.pip:
+    name: zabbix-api
+    state: present
+    extra_args: --break-system-packages 
+  delegate_to: localhost
+
+# Passo 3: Com as dependências garantidas, registrar o Proxy no Zabbix Server.
 - name: API | Registrar este Proxy no Zabbix Server
   community.zabbix.zabbix_proxy:
     server_url: "{{ zabbix_server_url }}"
