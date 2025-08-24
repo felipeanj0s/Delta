@@ -1,4 +1,3 @@
----
 # ==============================================================================
 # Task para a Role 'zabbix_proxy'
 # Arquivo: roles/zabbix_proxy/tasks/main.yml
@@ -71,20 +70,27 @@
   when: not proxy_psk_file_status.stat.exists
   changed_when: true
 
-# 4. (NOVO) Registrar a identidade e a chave PSK como fatos para uso pela API
+# 4. Ler a chave PSK do arquivo se já existir
+- name: Ler chave PSK existente do arquivo
+  ansible.builtin.slurp:
+    src: "{{ zabbix_proxy_psk_file }}"
+  register: proxy_psk_file_content
+  when: proxy_psk_file_status.stat.exists
+
+# 5. Registrar a identidade e a chave PSK como fatos para uso pela API
 - name: Registrar informações do Proxy para a API
   ansible.builtin.set_fact:
     proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
-    proxy_api_psk_key: "{{ proxy_psk_value_raw.stdout }}"
-  when: not proxy_psk_file_status.stat.exists
+    proxy_api_psk_key: "{{ (proxy_psk_file_status.stat.exists) | ternary(proxy_psk_file_content.content | b64decode | trim, proxy_psk_value_raw.stdout) }}"
+    cacheable: yes
 
-# 5. Exibir a chave PSK para o usuário (para fins de debug)
+# 6. Exibir a chave PSK para o usuário (para fins de debug)
 - name: Exibir valor da chave PSK gerada
   ansible.builtin.debug:
-    msg: "VALOR DA CHAVE PSK: {{ proxy_psk_value_raw.stdout }}"
+    msg: "VALOR DA CHAVE PSK: {{ proxy_api_psk_key }}"
   when: not proxy_psk_file_status.stat.exists
 
-# 6. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
+# 7. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
 - name: Criar arquivo PSK e definir permissões
   ansible.builtin.copy:
     content: "{{ proxy_psk_value_raw.stdout }}"

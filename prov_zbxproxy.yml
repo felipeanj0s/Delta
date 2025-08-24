@@ -5,24 +5,22 @@
 # A ordem das roles importa.
 # ============================================================================================================================
 ---
-- name: Provisionar a instalação, configuração e registro do Zabbix Proxy. 
+- name: Configurar Zabbix Proxy e Agent
   hosts: all
   become: yes
-  gather_facts: yes
   vars_files:
     - group_vars/all.yml
-  roles:
-    # Passo 1: Descobre a localidade e carrega as variáveis (ex: group_vars/ce.yml)
-    - role: setup_context
-
-    # Passo 2: Configura a rede e segurança na máquina
-    - role: net_security
-
-    # Passo 3: Instala o proxy e CRIA os fatos com a chave PSK
-    - role: zabbix_proxy
-
-    # Passo 4: Instala o agent
-    - role: zabbix_agent
-
-    # Passo 5: USA os fatos criados no Passo 3 para se registrar na API do Zabbix Server
-    - role: zabbix_server_register_proxy
+    - group_vars/ce.yml
+  tasks:
+    - name: Executar role net_security
+      include_role:
+        name: net_security
+    - name: Executar role zabbix_proxy
+      include_role:
+        name: zabbix_proxy
+    - name: Executar role zabbix_agent
+      include_role:
+        name: zabbix_agent
+    - name: Executar role zabbix_server_register_proxy
+      include_role:
+        name: zabbix_server_register_proxy

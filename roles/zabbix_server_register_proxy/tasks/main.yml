@@ -22,7 +22,7 @@
   ansible.builtin.set_fact:
     zabbix_auth_token: "{{ zabbix_auth_response.json.result }}"
 
-# 2. Criar o proxy com PSK
+# Criar o proxy com PSK
 - name: API | Criar proxy no Zabbix Server
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
@@ -41,7 +41,7 @@
         tls_accept: 2
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
-      auth: "{{ zabbix_auth_response.json.result }}"
+      auth: "{{ zabbix_api_token }}"
       id: 1
   register: zabbix_proxy_create_response
 
