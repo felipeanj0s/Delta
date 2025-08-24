@@ -75,7 +75,7 @@
              (proxy_psk_file_content.content | default('') | b64decode | trim),
              (proxy_psk_value_raw.stdout | default(''))
            ) }}
-  cacheable: yes
+    cacheable: yes   # <<< AGORA no lugar correto (dentro de set_fact)
 
 - name: PSK | Criar arquivo com a nova chave (se necessário)
   ansible.builtin.copy:
@@ -85,6 +85,7 @@
     group: zabbix
     mode: '0600'
   when: not proxy_psk_file_status.stat.exists
+
 
 # ==============================================================================
 # --- Configuração e Gestão do Serviço ---

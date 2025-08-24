@@ -1,13 +1,11 @@
 # ==============================================================================
 # GT Monitoramento 2025
 # Tasks da Role 'zabbix_server_register_proxy' (Versão Final Otimizada)
+# Compatível com Zabbix 7.2.x
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
 # ==============================================================================
 
 ---
-# ==============================================================================
-# --- Registro do Proxy no Zabbix Server via API ---
-# ==============================================================================
 
 # 1. Checar se o proxy já existe
 - name: API | Verificar se o Proxy já está cadastrado
@@ -22,11 +20,14 @@
       jsonrpc: "2.0"
       method: "proxy.get"
       params:
-        filter:
-          host: "{{ zabbix_proxy_hostname }}"
+        output: ["hostid", "host"]
+        searchByAny: true
+        search:
+          host: ["{{ zabbix_proxy_hostname }}"]  # <-- ALTERE AQUI
       id: 1
     validate_certs: no
   register: zabbix_proxy_check
+  failed_when: zabbix_proxy_check.status not in [200, 201]
 
 # 2. Criar o Proxy se não existir
 - name: API | Registrar este Proxy no Zabbix Server
@@ -41,7 +42,7 @@
       jsonrpc: "2.0"
       method: "proxy.create"
       params:
-        host: "{{ zabbix_proxy_hostname }}"
+        host: ["{{ zabbix_proxy_hostname }}"]
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
         status: 5               # 5 = proxy ativo
         tls_connect: 2          # 2 = PSK
@@ -56,10 +57,12 @@
       id: 1
     validate_certs: no
   register: zabbix_api_response
-  when: zabbix_proxy_check.json.result | length == 0
+  when: zabbix_proxy_check.json.result is defined and
+        zabbix_proxy_check.json.result | length == 0
 
 # 3. Debug para acompanhar
 - name: Debug | Exibir resposta da API
   ansible.builtin.debug:
     var: zabbix_api_response.json
   when: zabbix_api_response is defined
+
