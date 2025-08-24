@@ -1,17 +1,8 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Tasks da Role 'zabbix_server_register_proxy' (Versão Final e Definitiva)
-# Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
-# Descrição: Esta role finaliza a automação registrando o proxy na API do
-#            Zabbix Server. É autossuficiente, instalando suas próprias
-#            dependências e usando o método de autenticação Bearer Token,
-#            correto para o Zabbix 7.x.
-# Versão: 6.0 (Final)
-# Data: 2025-08-23
-# Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br>
+# Role 'zabbix_server_register_proxy' - versão revisada
 # ==============================================================================
 ---
-# Passo 1: Garantir que o PIP, a ferramenta para instalar bibliotecas Python, esteja presente no sistema.
 - name: Dependências | Garantir que o gerenciador de pacotes PIP para Python 3 esteja instalado
   become: yes
   ansible.builtin.apt:
@@ -19,39 +10,38 @@
     state: present
     update_cache: yes
 
-# Passo 2: (Opcional, mas boa prática) Garantir que a biblioteca zabbix-api esteja instalada.
 - name: Dependências | Garantir que a biblioteca zabbix-api do Python esteja instalada
   ansible.builtin.pip:
     name: zabbix-api
     state: present
     extra_args: --break-system-packages
 
-# Passo 3: Registrar o Proxy no Zabbix Server usando o método de API correto (Bearer Token).
 - name: API | Registrar este Proxy no Zabbix Server
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
     headers:
       Content-Type: "application/json-rpc"
-      # Adiciona o token de API no cabeçalho HTTP, como o Zabbix 7.2 exige.
       Authorization: "Bearer {{ zabbix_api_token }}"
     body_format: json
     body:
       jsonrpc: "2.0"
       method: "proxy.create"
       params:
-        host: "{{ zabbix_proxy_hostname }}"
-        status: 5 # 5 = Proxy Ativo
+        host: "{{ zabbix_proxy_hostname }}"   # Zabbix usa 'host' para proxies também
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        tls_connect: 2 # 2 = PSK
-        tls_accept: 2 # 2 = PSK
+        tls_connect: 2   # 2 = PSK
+        tls_accept: 2
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
-      # O campo 'auth' NÃO VAI AQUI DENTRO. Ele vai no 'headers' acima.
+        interface:
+          dns: ""
+          ip: "127.0.0.1"   # IP fictício, proxy ativo não usa interface
+          port: "10051"
+          useip: 1
       id: 1
     validate_certs: no
   register: zabbix_api_response
-  # Esta tarefa só roda se uma nova chave PSK foi gerada pela role 'zabbix_proxy'.
   when: proxy_api_psk_key is defined
 
 - name: Debug | Exibir resposta da criação do Proxy

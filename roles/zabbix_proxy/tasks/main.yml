@@ -43,7 +43,7 @@
 
 # ==============================================================================
 # --- Geração e Configuração da Chave PSK para Criptografia ---
-# Esta seção gera a chave PSK e a registra como um "fato" para automação da API.
+# Esta seção foi corrigida para lidar com a chave, seja ela nova ou existente.
 # ==============================================================================
 
 # 1. Verificar se o arquivo PSK já existe
@@ -77,23 +77,24 @@
   register: proxy_psk_file_content
   when: proxy_psk_file_status.stat.exists
 
-# 5. Registrar a identidade e a chave PSK como fatos para uso pela API
+# 5. Registrar a identidade e a chave PSK como fatos para uso pela API (com sua lógica ternary)
 - name: Registrar informações do Proxy para a API
   ansible.builtin.set_fact:
     proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
+    # Lógica condicional: se o arquivo existe, usa o conteúdo dele; se não, usa a chave gerada.
     proxy_api_psk_key: "{{ (proxy_psk_file_status.stat.exists) | ternary(proxy_psk_file_content.content | b64decode | trim, proxy_psk_value_raw.stdout) }}"
     cacheable: yes
 
 # 6. Exibir a chave PSK para o usuário (para fins de debug)
-- name: Exibir valor da chave PSK gerada
+- name: Exibir valor da chave PSK que será usada
   ansible.builtin.debug:
-    msg: "VALOR DA CHAVE PSK: {{ proxy_api_psk_key }}"
-  when: not proxy_psk_file_status.stat.exists
+    var: proxy_api_psk_key
 
 # 7. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
 - name: Criar arquivo PSK e definir permissões
   ansible.builtin.copy:
-    content: "{{ proxy_psk_value_raw.stdout }}"
+    # Usa a variável unificada para garantir consistência
+    content: "{{ proxy_api_psk_key }}"
     dest: "{{ zabbix_proxy_psk_file }}"
     owner: zabbix
     group: zabbix
