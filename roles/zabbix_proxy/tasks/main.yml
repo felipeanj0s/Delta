@@ -10,6 +10,7 @@
   ansible.builtin.stat:
     path: "/etc/apt/sources.list.d/zabbix.list"
   register: zabbix_repo_status
+  changed_when: false
 
 - name: Baixar e instalar o pacote do repositório Zabbix
   ansible.builtin.apt:
@@ -31,29 +32,25 @@
 
 - name: Criar diretórios necessários
   ansible.builtin.file:
-    path: "{{ item.path }}"
+    path: "{{ item }}"
     state: directory
     owner: zabbix
     group: zabbix
     mode: '0755'
   loop:
-    - { path: "{{ zabbix_proxy_dbname | dirname }}" }
-    - { path: "{{ zabbix_proxy_logfile | dirname }}" }
-    - { path: "{{ zabbix_proxy_socket_dir }}" }
+    - "{{ zabbix_proxy_dbname | dirname }}"
+    - "{{ zabbix_proxy_logfile | dirname }}"
+    - "{{ zabbix_proxy_socket_dir }}"
 
 # ==============================================================================
-# --- Geração e Configuração da Chave PSK para Criptografia ---
-# Esta seção foi corrigida para lidar com a chave, seja ela nova ou existente.
+# --- Geração e Configuração da Chave PSK ---
 # ==============================================================================
-
-# 1. Verificar se o arquivo PSK já existe
 - name: Verificar status do arquivo PSK do proxy
   ansible.builtin.stat:
     path: "{{ zabbix_proxy_psk_file }}"
   register: proxy_psk_file_status
   changed_when: false
 
-# 2. Criar diretório para o arquivo PSK se não existir
 - name: Criar diretório para o arquivo PSK do proxy
   ansible.builtin.file:
     path: "{{ zabbix_proxy_psk_file | dirname }}"
@@ -63,43 +60,40 @@
     mode: '0755'
   when: not proxy_psk_file_status.stat.exists
 
-# 3. Gerar o valor da chave PSK (somente se o arquivo não existir)
-- name: Gerar valor da chave PSK
-  ansible.builtin.shell: openssl rand -hex 32
+- name: Gerar valor da chave PSK (somente se o arquivo não existir)
+  ansible.builtin.command: openssl rand -hex 32
   register: proxy_psk_value_raw
   when: not proxy_psk_file_status.stat.exists
   changed_when: true
 
-# 4. Ler a chave PSK do arquivo se já existir
 - name: Ler chave PSK existente do arquivo
   ansible.builtin.slurp:
     src: "{{ zabbix_proxy_psk_file }}"
   register: proxy_psk_file_content
   when: proxy_psk_file_status.stat.exists
+  changed_when: false
 
-# 5. Registrar a identidade e a chave PSK como fatos para uso pela API (com sua lógica ternary)
-- name: Registrar informações do Proxy para a API
+- name: Definir identidade e chave PSK como fatos
   ansible.builtin.set_fact:
     proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
-    # Lógica condicional: se o arquivo existe, usa o conteúdo dele; se não, usa a chave gerada.
-    proxy_api_psk_key: "{{ (proxy_psk_file_status.stat.exists) | ternary(proxy_psk_file_content.content | b64decode | trim, proxy_psk_value_raw.stdout) }}"
+    proxy_api_psk_key: >-
+      {{ (proxy_psk_file_status.stat.exists)
+         | ternary((proxy_psk_file_content.content | b64decode | trim),
+                   (proxy_psk_value_raw.stdout | default(''))) }}
     cacheable: yes
 
-# 6. Exibir a chave PSK para o usuário (para fins de debug)
-- name: Exibir valor da chave PSK que será usada
-  ansible.builtin.debug:
-    var: proxy_api_psk_key
-
-# 7. Criar o arquivo PSK e definir permissões (somente se o arquivo não existir)
-- name: Criar arquivo PSK e definir permissões
+- name: Criar arquivo PSK (somente se o arquivo não existir)
   ansible.builtin.copy:
-    # Usa a variável unificada para garantir consistência
     content: "{{ proxy_api_psk_key }}"
     dest: "{{ zabbix_proxy_psk_file }}"
     owner: zabbix
     group: zabbix
     mode: '0600'
   when: not proxy_psk_file_status.stat.exists
+
+- name: Exibir valor da chave PSK usada (debug)
+  ansible.builtin.debug:
+    var: proxy_api_psk_key
 
 # ==============================================================================
 # --- Aplicar configuração do Zabbix Proxy ---

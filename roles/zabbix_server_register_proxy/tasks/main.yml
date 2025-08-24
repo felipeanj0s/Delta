@@ -1,16 +1,16 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Role 'zabbix_server_register_proxy' - versão revisada
+# Role 'zabbix_server_register_proxy'
 # ==============================================================================
----
-- name: Dependências | Garantir que o gerenciador de pacotes PIP para Python 3 esteja instalado
+
+- name: Dependências | Garantir pip3
   become: yes
   ansible.builtin.apt:
     name: python3-pip
     state: present
     update_cache: yes
 
-- name: Dependências | Garantir que a biblioteca zabbix-api do Python esteja instalada
+- name: Dependências | Garantir zabbix-api
   ansible.builtin.pip:
     name: zabbix-api
     state: present
@@ -28,15 +28,15 @@
       jsonrpc: "2.0"
       method: "proxy.create"
       params:
-        host: "{{ zabbix_proxy_hostname }}"   # Zabbix usa 'host' para proxies também
+        host: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        tls_connect: 2   # 2 = PSK
+        tls_connect: 2
         tls_accept: 2
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
         interface:
           dns: ""
-          ip: "127.0.0.1"   # IP fictício, proxy ativo não usa interface
+          ip: "127.0.0.1"
           port: "10051"
           useip: 1
       id: 1
