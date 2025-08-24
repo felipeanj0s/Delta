@@ -1,7 +1,27 @@
-# ============================================================================== 
-# --- Verificação e Registro do Proxy ---
 # ==============================================================================
+# GT Monitoramento 2025
+# Tasks da Role 'zabbix_server_register_proxy' (Versão Ajustada)
+# ==============================================================================
+---
+# ======================================================================
+# --- Instalação de Dependências ---
+# ======================================================================
+- name: Dependências | Garantir que o PIP esteja instalado
+  become: yes
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
 
+- name: Dependências | Garantir que a biblioteca zabbix-api esteja instalada
+  ansible.builtin.pip:
+    name: zabbix-api
+    state: present
+    extra_args: --break-system-packages
+
+# ======================================================================
+# --- Verificação e Registro do Proxy ---
+# ======================================================================
 - name: API | Verificar se o Proxy já está cadastrado no Zabbix Server
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
@@ -14,7 +34,7 @@
       jsonrpc: "2.0"
       method: "proxy.get"
       params:
-        output: ["proxyid", "name"]
+        output: ["proxyid","name"]
         filter:
           name: ["{{ zabbix_proxy_hostname }}"]
       id: 1
@@ -40,13 +60,7 @@
         tls_accept: 2
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
-        interfaces:
-          - type: 1         
-            main: 1        
-            useip: 1
-            ip: "0.0.0.0"
-            dns: ""
-            port: "10051"
+        # Não usamos "interfaces", apenas os parâmetros compatíveis com a API do Zabbix
       id: 1
     validate_certs: no
   register: zabbix_proxy_create_response
@@ -57,5 +71,10 @@
 
 - name: Debug | Exibir resposta da API
   ansible.builtin.debug:
-    msg: "Resposta da API: {{ zabbix_proxy_create_response.json | default(zabbix_proxy_get_response.json) }}"
+    msg: >-
+      {% if zabbix_proxy_create_response is defined %}
+        {{ zabbix_proxy_create_response.json }}
+      {% else %}
+        {{ zabbix_proxy_get_response.json }}
+      {% endif %}
   when: proxy_api_psk_key is defined
