@@ -65,15 +65,17 @@
   register: proxy_psk_file_content
   when: proxy_psk_file_status.stat.exists
   changed_when: false
-
+  
 - name: Fatos | Definir identidade e chave PSK para uso em outras roles
   ansible.builtin.set_fact:
     proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
     proxy_api_psk_key: >-
-      {{ proxy_psk_file_status.stat.exists
-          | ternary((proxy_psk_file_content.content | b64decode | trim),
-                    (proxy_psk_value_raw.stdout | trim)) }}
-    cacheable: yes
+      {{ proxy_psk_file_content.content | b64decode | trim
+         if (proxy_psk_file_status.stat.exists and proxy_psk_file_content is defined)
+         else (proxy_psk_value_raw.stdout | default('')) }}
+  cacheable: yes
+
+
 
 - name: PSK | Criar arquivo com a nova chave (se necessário)
   ansible.builtin.copy:
