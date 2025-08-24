@@ -65,7 +65,7 @@ zabbix_proxy_fping_location: "/usr/bin/fping"
 zabbix_proxy_fping6_location: "/usr/bin/fping6"
 
 # --- Parâmetros de Conexão e Processos ---
-zabbix_proxy_mode: 0
+zabbix_proxy_mode: 1
 zabbix_proxy_listenip: "0.0.0.0"
 zabbix_proxy_listenport: 10051
 zabbix_proxy_buffermode: "hybrid"
