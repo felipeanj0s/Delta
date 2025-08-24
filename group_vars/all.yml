@@ -21,9 +21,13 @@ zabbix_server_ip: "192.168.0.208"
 zabbix_active_server_ips:
   - "192.168.0.208"
 
-zabbix_server_url: "http://192.168.0.208/zabbix" # URL do seu Zabbix Server
+zabbix_server_url: "http://192.168.0.208/zabbix/api_jsonrpc.php"
+
+zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
+
 zabbix_api_user: "ansible_api"  
 zabbix_api_password: "popce2025" 
+
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================

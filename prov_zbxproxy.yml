@@ -5,9 +5,12 @@
 # A ordem das roles importa.
 # ============================================================================================================================
 ---
-- name: Provisionar e Registrar Zabbix Proxy de ponta a ponta
+- name: Provisionar a instalação, configuração e registro do Zabbix Proxy. 
   hosts: all
   become: yes
+  gather_facts: yes
+  vars_files:
+    - group_vars/all.yml
   roles:
     # Passo 1: Descobre a localidade e carrega as variáveis (ex: group_vars/ce.yml)
     - role: setup_context

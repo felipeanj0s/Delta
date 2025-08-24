@@ -30,7 +30,7 @@
           pop_network_ipv6_address.split('/')[0],
           pop_network_ipv4_gateway,
           pop_network_ipv6_gateway
-        ] + pop_network_dns_list | select() | list
+        ] | select('ne', '') | list + pop_network_dns_list | select('ne', '') | list
       }}
 
 - name: Testar a conectividade com os IPs de destino
