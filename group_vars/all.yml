@@ -25,6 +25,10 @@ zabbix_server_url: http://192.168.0.208/zabbix
 
 zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
 
+proxy_api_psk_key: "0e6329ea82bca7977607e8cf1e080d879f07b32ceee3407b33fb58b8de3582d9"
+proxy_api_psk_identity: "zabbix-rnp-ger-proxy-01-psk"
+
+
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
