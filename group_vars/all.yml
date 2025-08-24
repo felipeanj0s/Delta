@@ -25,9 +25,6 @@ zabbix_server_url: http://192.168.0.208/zabbix
 
 zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
 
-zabbix_api_user: "ansible_api"  
-zabbix_api_password: "popce2025" 
-
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
