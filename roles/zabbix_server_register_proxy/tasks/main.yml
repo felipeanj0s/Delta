@@ -1,21 +1,34 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Role 'zabbix_server_register_proxy'
+# Tasks da Role 'zabbix_server_register_proxy' (Versão Final Otimizada)
+# Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
 # ==============================================================================
 
-- name: Dependências | Garantir pip3
-  become: yes
-  ansible.builtin.apt:
-    name: python3-pip
-    state: present
-    update_cache: yes
+---
+# ==============================================================================
+# --- Registro do Proxy no Zabbix Server via API ---
+# ==============================================================================
 
-- name: Dependências | Garantir zabbix-api
-  ansible.builtin.pip:
-    name: zabbix-api
-    state: present
-    extra_args: --break-system-packages
+# 1. Checar se o proxy já existe
+- name: API | Verificar se o Proxy já está cadastrado
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.get"
+      params:
+        filter:
+          host: "{{ zabbix_proxy_hostname }}"
+      id: 1
+    validate_certs: no
+  register: zabbix_proxy_check
 
+# 2. Criar o Proxy se não existir
 - name: API | Registrar este Proxy no Zabbix Server
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
@@ -30,21 +43,23 @@
       params:
         host: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        tls_connect: 2
-        tls_accept: 2
+        status: 5               # 5 = proxy ativo
+        tls_connect: 2          # 2 = PSK
+        tls_accept: 2           # 2 = PSK
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
         interface:
+          ip: "0.0.0.0"         # Proxy ativo não precisa de IP real
           dns: ""
-          ip: "127.0.0.1"
           port: "10051"
           useip: 1
       id: 1
     validate_certs: no
   register: zabbix_api_response
-  when: proxy_api_psk_key is defined
+  when: zabbix_proxy_check.json.result | length == 0
 
-- name: Debug | Exibir resposta da criação do Proxy
+# 3. Debug para acompanhar
+- name: Debug | Exibir resposta da API
   ansible.builtin.debug:
     var: zabbix_api_response.json
   when: zabbix_api_response is defined
