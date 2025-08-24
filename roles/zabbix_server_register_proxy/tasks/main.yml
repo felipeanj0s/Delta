@@ -13,7 +13,7 @@
       jsonrpc: "2.0"
       method: "user.login"
       params:
-        user: "{{ zabbix_api_user }}"
+        username: "{{ zabbix_api_user }}"
         password: "{{ zabbix_api_password }}"
       id: 1
   register: zabbix_auth_response
@@ -41,7 +41,7 @@
         tls_accept: 2
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
-      auth: "{{ zabbix_api_token }}"
+      auth: "{{ zabbix_auth_response.json.result }}"
       id: 1
   register: zabbix_proxy_create_response
 

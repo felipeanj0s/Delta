@@ -21,7 +21,7 @@ zabbix_server_ip: "192.168.0.208"
 zabbix_active_server_ips:
   - "192.168.0.208"
 
-zabbix_server_url: "http://192.168.0.208/zabbix/api_jsonrpc.php"
+zabbix_server_url: http://192.168.0.208/zabbix
 
 zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
 

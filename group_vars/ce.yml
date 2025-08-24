@@ -26,8 +26,7 @@ pop_network_dns_list:
   - "200.129.0.42" # dns popce
   - "200.19.16.53" # dns rnp
   - "200.137.53.53" # dns rnp
-  - "2001:12f0:253::53" # dns rnp
-  - "2001:12f0:353::53" # dns rnp
+
 
 # ==============================================================================
 # --- Configurações de Segurança Especificas para o PoP-CE ---
