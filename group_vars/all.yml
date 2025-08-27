@@ -169,7 +169,7 @@ zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
 # ==============================================================================
 
 # --- GERAL ---
-zabbix_agent_pidfile: "/tmp/zabbix/zabbix_agent2.pid" 
+zabbix_agent_pidfile: "/run/zabbix/zabbix_agent2.pid"  # arquivos /tmp sao apagados quando o sistema reinicia
 zabbix_agent_logtype: "file" 
 zabbix_agent_logfile: "/var/log/zabbix/zabbix_agent2.log"
 zabbix_agent_logfile_size: 5
@@ -181,6 +181,7 @@ zabbix_agent_server: "{{ zabbix_server_ip }}"
 zabbix_agent_listenport: 10050
 
 ### ACTIVE CHECKS
+zabbix_agent_source_ip: "{{ pop_network_ipv4_address | split('/') | first }}"
 zabbix_agent_serveractive_list: "{{ zabbix_active_server_ips }}"
 zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
 zabbix_agent_refresh_active_checks: 300
