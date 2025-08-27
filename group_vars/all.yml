@@ -81,7 +81,6 @@ zabbix_proxy_proxybuffer: 0
 
 ### PROXY SERVICE
 zabbix_proxy_hostname: "{{ zabbix_proxy_hostname }}"
-zabbix_server_ip: "{{ zabbix_server_ip }}"
 zabbix_proxy_listenport: 10051
 zabbix_proxy_listenip: "0.0.0.0"
 
