@@ -25,6 +25,7 @@
     ips_para_testar: >-
       {{
         [
+          pop_network_interface,
           zabbix_server_ip,
           pop_network_ipv4_address.split('/')[0],
           pop_network_ipv6_address.split('/')[0],
