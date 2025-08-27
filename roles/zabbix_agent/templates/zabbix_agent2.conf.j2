@@ -1,8 +1,7 @@
 # ==============================================================================
-# Template de Configuração do Zabbix Agent
-# Arquivo: roles/zabbix_agent/templates/zabbix_agent2.conf.j2
+# Template de Configuração do Zabbix Agent 2
+# Arquivo: roles/zabbix_agent/templates/zabbix_agent.conf.j2
 # ==============================================================================
-
 
 ### GENERAL
 PidFile={{ zabbix_agent_pidfile }}
@@ -22,8 +21,6 @@ Hostname={{ zabbix_agent_hostname }}
 RefreshActiveChecks={{ zabbix_agent_refresh_active_checks }}
 BufferSend={{ zabbix_agent_buffer_send }}
 BufferSize={{ zabbix_agent_buffer_size }}
-EnablePersistentBuffering={{ zabbix_agent_enable_persistent_buffering }}
-PersistentBufferPeriod={{ zabbix_agent_persistent_buffer_period }}
 
 ### ADVANCED
 Include={{ zabbix_agent_include_dir }}
@@ -39,5 +36,3 @@ TLSPSKFile={{ zabbix_agent_psk_file }}
 Plugins.Log.MaxLinesPerSecond={{ zabbix_agent_plugins_log_max_lines }}
 Plugins.Docker.Endpoint={{ zabbix_agent_plugins_docker_endpoint }}
 Plugins.Docker.Timeout={{ zabbix_agent_plugins_docker_timeout }}
-
-
