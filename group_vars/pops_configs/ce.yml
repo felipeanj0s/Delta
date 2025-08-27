@@ -1,6 +1,6 @@
 # ==============================================================================
 # Variáveis Específicas do Projeto - POP-CE
-# Arquivo: group_vars/ce.yml
+# Arquivo: group_vars/pops_configs/ce.yml
 # Descrição: Este arquivo contém variáveis específicas de rede e hostname
 #            utilizadas nos roles do projeto para o POP-CE.
 # ==============================================================================
@@ -8,8 +8,8 @@
 # ==============================================================================
 # --- Configuração do Nome para o Zabbix Proxy e Agent ---
 # ==============================================================================
-zabbix_proxy_hostname: "ce-rnp-sv-vm-zabbix-proxy01"
-zabbix_agent_hostname: "ce-rnp-sv-vm-zabbix-proxy01-agent"
+zabbix_proxy_hostname: "ce-zabbix-rnp-ger-proxy01"
+zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 
 # ==============================================================================
 # --- Informações de rede do PoP-CE. Usadas para configurar a interface de rede ---
@@ -26,7 +26,6 @@ pop_network_dns_list:
   - "200.129.0.42" # dns popce
   - "200.19.16.53" # dns rnp
   - "200.137.53.53" # dns rnp
-
 
 # ==============================================================================
 # --- Configurações de Segurança Especificas para o PoP-CE ---

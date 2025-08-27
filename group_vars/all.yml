@@ -7,8 +7,8 @@
 #             - pre_checks   (roles/pre_checks)
 #             - zabbix_proxy (roles/zabbix_proxy)
 #             - zabbix_agent (roles/zabbix_agent)
-# Versão: 3.0
-# Data: 2025-08-21
+# Versão: 4.0
+# Data: 2025-08-27
 # Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br
 # ==============================================================================
 
@@ -28,7 +28,12 @@ zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
 # ==============================================================================
-# Define as variáveis para o repositório e pacotes do Zabbix.
+# OBS:
+# Caso seja alterada a versão, é necessário verificar a compatibilidade dos pacotes,
+# pois a instalação pode falhar se houver incompatibilidades.
+# Se o SO for alterado, também é necessário alterar o esquema da instalação, e 
+# possivelmente o esquema da configuração da rede.
+# ==============================================================================
 zabbix_version: "7.2"
 zabbix_repo_file: "zabbix-release_latest_7.2+debian12_all.deb"
 zabbix_repo_url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/release/debian/pool/main/z/zabbix-release/{{ zabbix_repo_file }}"
@@ -37,9 +42,15 @@ zabbix_agent_package: "zabbix-agent2=1:7.2.7-1+debian12"
 zabbix_agent_service_name: "zabbix-agent2"
 
 # ==============================================================================
-# Seção II: Configurações de Rede
+# --- Seção II: Configurações de Rede ---
 # ==============================================================================
-# Variáveis de rede genéricas.
+# Variaveis relacionadas: 
+#   - group_vars/pops_configs/{{ location_code }}.yml
+#
+# OBS: Caso o sistema operacional for alterado, é necessário alterar o esquema 
+# de configuração de rede em net_security/templates/interfaces.j2
+# e também em Configuração de Rede em roles/net_security/tasks/main.yml.
+# ==============================================================================
 pop_network_addresses:
   - "{{ pop_network_ipv4_address }}"
   - "{{ pop_network_ipv6_address }}"
@@ -52,27 +63,37 @@ pop_network_routes:
     via: "{{ pop_network_ipv6_gateway }}"
 
 # ==============================================================================
-# Seção III: Configurações do Zabbix Proxy
-# Referência: https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_proxy.conf
+# --- Seção III: Configurações do Zabbix Proxy ---
 # ==============================================================================
-# --- Caminhos de Arquivos ---
-zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db" # discordo de DBName=/tmp/zabbix_proxy.db, porque se a vm rebootar, esse arquivo será excluido
-zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
-zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
-zabbix_proxy_socket_dir: "/run/zabbix"
-zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
-zabbix_proxy_fping_location: "/usr/bin/fping"
-zabbix_proxy_fping6_location: "/usr/bin/fping6"
-
-# --- Parâmetros de Conexão e Processos ---
+# Role de execução: roles/zabbix_proxy/tasks/main.yml
+# Templates relacionados:
+#   - roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
+# ==============================================================================
+# Referências:
+# https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_proxy.conf
+# https://gist.github.com/zunkree/7385258
+# ==============================================================================
+### PROXY MODE
 zabbix_proxy_mode: 1
-zabbix_proxy_listenip: "0.0.0.0"
-zabbix_proxy_listenport: 10051
 zabbix_proxy_buffermode: "hybrid"
 zabbix_proxy_memory_buffer_size: "256M"
-zabbix_proxy_startpollers: 50
+zabbix_proxy_proxybuffer: 0
+
+### PROXY SERVICE
+zabbix_proxy_hostname: "{{ zabbix_proxy_hostname }}"
+zabbix_server_ip: "{{ zabbix_server_ip }}"
+zabbix_proxy_listenport: 10051
+zabbix_proxy_listenip: "0.0.0.0"
+
+### GENERAL
+zabbix_proxy_pidfile: "/run/zabbix/zabbix_proxy.pid"
+zabbix_proxy_socket_dir: "/run/zabbix"
+
+### PROCESSES
+zabbix_proxy_startpollers: 550
 zabbix_proxy_startpreprocessors: 40
 zabbix_proxy_startpollersunreachable: 60
+zabbix_proxy_starthistorypollers: 10 # comentado em zabbix_proxy.conf.j2
 zabbix_proxy_starttrappers: 10
 zabbix_proxy_startpingers: 100
 zabbix_proxy_startdiscoverers: 100
@@ -83,87 +104,166 @@ zabbix_proxy_startdbsyncers: 4
 zabbix_proxy_startipmipollers: 1
 zabbix_proxy_startvmwarecollectors: 1
 
-# --- Cache e Buffers ---
+### CACHE
 zabbix_proxy_cachesize: 512M
 zabbix_proxy_historycachesize: 64M
 zabbix_proxy_historyindexcachesize: 32M
-zabbix_proxy_proxybuffer: 0
+
+### TLS
+zabbix_proxy_tls_connect: "psk"
+zabbix_proxy_tls_accept: "psk"
+zabbix_proxy_psk_identity: "{{ zabbix_proxy_hostname }}-psk"
+zabbix_proxy_psk_file: "/etc/zabbix/psk/{{ zabbix_proxy_hostname }}.psk"
+
+### LOG
+zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
+zabbix_proxy_logtype: "file"
+zabbix_proxy_logfile_size: 5
+zabbix_proxy_debug_level: 1
+
+#### LOCAL DATABASE
+zabbix_proxy_dbname: "/var/lib/zabbix/zabbix_proxy.db" # discordo de DBName=/tmp/zabbix_proxy.db, porque se a vm rebootar, esse arquivo será excluido
 zabbix_proxy_offline_buffer: 12
 
-# --- Timers e Tempo ---
+### TIMERS
+HeartbeatFrequency: 60 # comentado em zabbix_proxy.conf.j2
 zabbix_proxy_config_frequency: 60
 zabbix_proxy_datasender_frequency: 1
-zabbix_proxy_heartbeat_frequency: 60
 zabbix_proxy_housekeeping_frequency: 1
+zabbix_proxy_timeout: 15
+zabbix_proxy_trappertimeout: 300
 zabbix_proxy_unreachable_period: 45
 zabbix_proxy_unavailable_delay: 60
 zabbix_proxy_unreachable_delay: 15
-zabbix_proxy_timeout: 15
-zabbix_proxy_trappertimeout: 300
-zabbix_proxy_debug_level: 1
-zabbix_proxy_logfile_size: 5
 
-# --- TLS ---
-zabbix_proxy_tls_connect: "psk"
-zabbix_proxy_tls_accept: "psk"
-zabbix_proxy_psk_identity: "zabbix-rnp-ger-proxy-01-psk"
-zabbix_proxy_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-proxy.psk"
+### FPING
+zabbix_proxy_fping_location: "/usr/bin/fping"
+zabbix_proxy_fping6_location: "/usr/bin/fping6"
 
-# --- Compatibilidade ---
+### REMOTE COMMANDS
+zabbix_proxy_enable_remote_commands: 0
+zabbix_proxy_log_remote_commands: 0
+
+### DATABASE COMPATIBILITY
 zabbix_proxy_allow_unsupported_db: 0
 
+### SSH
+zabbix_proxy_ssh_key_location: "/etc/zabbix/ssh_keys/.ssh"
 # ==============================================================================
-# Seção IV: Configurações do Zabbix Agent
-# Referência: https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_agent2.conf
+# --- Seção IV: Configurações do Zabbix Agent ---
 # ==============================================================================
-# --- Parâmetros de Conexão ---
-zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
-zabbix_agent_server: "{{ zabbix_server_ip }}"
-zabbix_agent_serveractive_list: "{{ zabbix_active_server_ips }}"
-zabbix_agent_source_ip: "{{ pop_network_ipv4_address | split('/') | first }}"
+# Role de execução: roles/zabbix_agent/tasks/main.yml
+# Templates relacionados:
+#   - roles/zabbix_agent/templates/zabbix_agent2.conf.j2
+# ==============================================================================
+# Referências:
+# https://git.rnp.br/gt-monitoramento/poc-monitoramento/-/blob/44887513e9a8aeb02d7203d7bacc2a7decf8515b/config-zabbix-exemplo/zabbix_agent2.conf
+# https://gist.github.com/devops-school/429adf956abbc3ddaf2420260d378a0c
+# ==============================================================================
 
-# --- Caminhos de Arquivos e Logs ---
-zabbix_agent_pidfile: "/run/zabbix/zabbix_agent2.pid"
-zabbix_agent_logtype: "file"
+# --- GERAL ---
+zabbix_agent_pidfile: "/tmp/zabbix/zabbix_agent2.pid" 
+zabbix_agent_logtype: "file" 
 zabbix_agent_logfile: "/var/log/zabbix/zabbix_agent2.log"
 zabbix_agent_logfile_size: 5
-zabbix_agent_include_dir: "/etc/zabbix/zabbix_agent2.d/*.conf"
-zabbix_agent_control_socket: "/tmp/agent.sock"
-
-# --- Parâmetros de Processos e Desempenho ---
-zabbix_agent_listenport: 10050
-zabbix_agent_start_agents: 0
-zabbix_agent_timeout: 30
 zabbix_agent_debug_level: 1
+zabbix_agent_source_ip: "{{ pop_network_ipv4_address | split('/') | first }}"
+
+# --- PASSIVE CHECKS ---
+zabbix_agent_server: "{{ zabbix_server_ip }}"
+zabbix_agent_listenport: 10050
+
+### ACTIVE CHECKS
+zabbix_agent_serveractive_list: "{{ zabbix_active_server_ips }}"
+zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
 zabbix_agent_refresh_active_checks: 300
 zabbix_agent_buffer_send: 10
 zabbix_agent_buffer_size: 100
+zabbix_agent_enable_persistent_buffering: 0
+zabbix_agent_persistent_buffer_period: 1h 
+zabbix_agent_persistent_buffer_file: "/var/lib/zabbix/agent2/persistent_buffer" # cometenado no zabbix_agent2.conf.j2
 
-# --- Parâmetros de Segurança e Plugins ---
-zabbix_agent_enable_remote_commands: 0
+### ADVANCED
+zabbix_agent_include_dir: "/etc/zabbix/zabbix_agent2.d/*.conf"
+zabbix_agent_timeout: 30
+zabbix_agent_unsafe_user_parameters: 0 # cometenado no zabbix_agent2.conf.j2
+zabbix_agent_control_socket: "/tmp/agent.sock"
+
+### TLS
 zabbix_agent_tls_connect: "psk"
 zabbix_agent_tls_accept: "psk"
 zabbix_agent_psk_identity: "zabbix-rnp-ger-agent-psk"
-zabbix_agent_psk_file: "/etc/zabbix/psk/zabbix-rnp-ger-agent.psk"
+zabbix_agent_psk_file: "/etc/zabbix/psk/ce-zabbix-rnp-ger-agent.psk"
+
+### PLUGINS
 zabbix_agent_plugins_log_max_lines: 20
 zabbix_agent_plugins_docker_endpoint: "unix:///var/run/docker.sock"
 zabbix_agent_plugins_docker_timeout: 20
 
 # ==============================================================================
-# Seção V: Segurança
+# --- Seção V: Segurança ---
 # ==============================================================================
-# Configurações para Fail2Ban e UFW.
+# Role de execução: roles/network_security/tasks/main.yml
+# Templates relacionados:
+#   - roles/network_security/templates/sshd_config.j2
+#   - roles/network_security/templates/ssh.config.j2 -> Fail2ban
+# ==============================================================================
+
+# --- Fail2Ban ---
 fail2ban_sshd_port: "{{ ssh_port }}"
 fail2ban_maxretry: 10
 fail2ban_findtime: 10m
 fail2ban_bantime: 24h
+fail2ban_ignore_ips:
+  - "127.0.0.1/8"
+  - "{{ pop_network_ipv4_gateway }}"
+  - "{{ pop_network_addresses | join(',') }}"
+  - "{{ zabbix_active_server_ips | join(',') }}"
 
+# --- UFW ---
 ufw_rules:
-  # Porta SSH liberada apenas para o gateway
-  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "{{ ssh_port }}", proto: "tcp", comment: "SSH - Gateway IPV4", direction: 'in' }
+  # SSH liberado para gateway e IPs relevantes do POP
+  - rule: allow
+    from: "{{ pop_network_ipv4_gateway }}"
+    port: "{{ ssh_port }}"
+    proto: tcp
+    comment: "SSH - Gateway IPV4"
+    direction: in
 
-  # Porta Zabbix Agent liberada para o gateway
-  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10050", proto: "tcp", comment: "Zabbix Agent - Gateway", direction: 'in' }
+  - rule: allow
+    from: "{{ pop_network_addresses | join(',') }}"
+    port: "{{ ssh_port }}"
+    proto: tcp
+    comment: "SSH - IPs do POP"
+    direction: in
 
-  # Porta Zabbix Proxy liberada para o gateway
-  - { rule: allow, from: "{{ pop_network_ipv4_gateway }}", port: "10051", proto: "tcp", comment: "Zabbix Proxy - Gateway", direction: 'in' }
+  # Zabbix Agent liberado para gateway
+  - rule: allow
+    from: "{{ pop_network_ipv4_gateway }}"
+    port: 10050
+    proto: tcp
+    comment: "Zabbix Agent - Gateway"
+    direction: in
+
+  # Zabbix Proxy liberado para gateway
+  - rule: allow
+    from: "{{ pop_network_ipv4_gateway }}"
+    port: 10051
+    proto: tcp
+    comment: "Zabbix Proxy - Gateway"
+    direction: in
+
+  # Zabbix Agent/Proxy liberado para servidores centrais ativos
+  - rule: allow
+    from: "{{ zabbix_active_server_ips | join(',') }}"
+    port: 10050
+    proto: tcp
+    comment: "Zabbix Agent - Active Servers"
+    direction: in
+
+  - rule: allow
+    from: "{{ zabbix_active_server_ips | join(',') }}"
+    port: 10051
+    proto: tcp
+    comment: "Zabbix Proxy - Active Servers"
+    direction: in

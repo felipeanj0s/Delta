@@ -49,11 +49,6 @@
     msg: "Teste para {{ item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"
   loop: "{{ ping_results.results }}"
 
-
-
-
-
-
 # ==============================================================================
 # --- Configuração do Hostname ---
 # Define o nome da máquina para facilitar a identificação na rede e no
@@ -62,6 +57,14 @@
 - name: Configurar o hostname da máquina
   ansible.builtin.hostname:
     name: "{{ zabbix_proxy_hostname }}"
+
+- name: Atualizar /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1 {{ zabbix_proxy_hostname }}"
+    state: present
+
 
 # ==============================================================================
 # --- Configuração de Rede (Debian) ---
@@ -129,6 +132,9 @@
     mode: '0600'
   notify:
     - Reiniciar SSH
+
+- name: Validar configuração SSH
+  ansible.builtin.command: sshd -t
 
 # ==============================================================================
 # --- Configuração de Regras do UFW (Inbound) ---

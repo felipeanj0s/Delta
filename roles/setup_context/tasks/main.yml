@@ -11,7 +11,5 @@
 
 - name: Setup | Carregar variáveis específicas da localidade
   ansible.builtin.include_vars:
-    # Usa a variável que acabamos de criar para montar o caminho do arquivo dinamicamente.
-    file: "group_vars/{{ location_code }}.yml"
-  # Se o arquivo (ex: group_vars/ce.yml) não existir, o playbook vai parar com um erro claro.
-  ignore_errors: no
+    file: "group_vars/pops_configs/{{ location_code }}.yml"
+  ignore_errors: no   # Se o arquivo (ex: group_vars/ce.yml) não existir, o playbook vai parar com um erro.

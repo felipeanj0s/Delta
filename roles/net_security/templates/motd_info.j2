@@ -3,16 +3,40 @@
 # ==============================================================================
 # GT Monitoramento 2025
 # Script de Geração de Mensagem do Dia (MOTD)
-# Descrição: Este script dinâmico exibe informações do sistema após o login.
 # ==============================================================================
 
-echo ""
-echo "################################################################"
-echo "        Bem-vindo, {{ zabbix_proxy_hostname }}"
-echo "################################################################"
-echo ""
-echo " - Acesso Concedido. Toda atividade está sendo monitorada."
-echo " - Servidor configurado com IPv4: {{ pop_network_ipv4_address | ipaddr('address') }}"
-echo " - Versão do Zabbix Agent: {{ zabbix_agent_package }}"
-echo " - Último login: `last -1`"
-echo ""
+# Cores
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[1;34m"
+RESET="\033[0m"
+
+# Função para checar status de serviços
+get_status() {
+    if systemctl is-active --quiet "$1"; then
+        printf "${GREEN}active${RESET}"
+    else
+        printf "${RED}inactive${RESET}"
+    fi
+}
+
+# Versão do Debian
+DEBIAN_VERSION=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')
+
+printf "\n${BLUE}################################################################${RESET}\n"
+printf "        ${GREEN}Bem-vindo, {{ zabbix_proxy_hostname }}${RESET}\n"
+printf "${BLUE}################################################################${RESET}\n\n"
+
+printf " ${GREEN}- Acesso Concedido.${RESET} Toda atividade está sendo monitorada.\n"
+printf " ${YELLOW}- Versão do SO:${RESET} $DEBIAN_VERSION\n"
+printf " ${YELLOW}- Servidor IPv4:${RESET} {{ pop_network_ipv4_address | ipaddr('address') }}\n"
+printf " ${YELLOW}- Versão do Zabbix Agent:${RESET} {{ zabbix_agent_package }}\n"
+printf " ${YELLOW}- Último login:${RESET} $(last -1 | head -1)\n"
+printf " ${YELLOW}- Uptime:${RESET} $(uptime -p)\n"
+printf " ${YELLOW}- Usuários conectados:${RESET} $(who | wc -l)\n"
+printf " ${YELLOW}- Memória usada:${RESET} $(free -h | awk '/^Mem:/ {print $3 "/" $2}')\n"
+printf " ${YELLOW}- Disco raiz:${RESET} $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')\n"
+printf " ${YELLOW}- Status Zabbix Agent:${RESET} $(get_status zabbix-agent)\n"
+printf " ${YELLOW}- Status Zabbix Proxy:${RESET} $(get_status zabbix-proxy)\n\n"
+printf "${BLUE}################################################################${RESET}\n"

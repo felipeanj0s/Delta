@@ -45,7 +45,7 @@
     - "{{ zabbix_proxy_psk_file | dirname }}"
 
 # ==============================================================================
-# --- Gestão da Chave PSK e Fatos para a API ---
+# --- Gestão da Chave PSK ---
 # ==============================================================================
 - name: PSK | Verificar status do arquivo
   ansible.builtin.stat:
@@ -75,8 +75,7 @@
              (proxy_psk_file_content.content | default('') | b64decode | trim),
              (proxy_psk_value_raw.stdout | default(''))
            ) }}
-    cacheable: yes   # <<< AGORA no lugar correto (dentro de set_fact)
-
+    cacheable: yes   
 - name: PSK | Criar arquivo com a nova chave (se necessário)
   ansible.builtin.copy:
     content: "{{ proxy_api_psk_key }}"

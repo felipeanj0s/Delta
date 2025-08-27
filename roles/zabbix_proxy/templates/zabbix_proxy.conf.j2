@@ -5,24 +5,32 @@
 #            utilizando variáveis globais para garantir consistência.
 # ==============================================================================
 
-# --- Parâmetros Gerais ---
+### PROXY MODE
 ProxyMode={{ zabbix_proxy_mode }}
+ProxyBufferMode={{ zabbix_proxy_buffermode }}
+ProxyMemoryBufferSize={{ zabbix_proxy_memory_buffer_size }}
+ProxyOfflineBuffer={{ zabbix_proxy_offline_buffer }}
+ProxyLocalBuffer={{ zabbix_proxy_proxybuffer }}
+
+
+### PROXY SERVICE 
+ListenIP={{ zabbix_proxy_listenip }}
 Hostname={{ zabbix_proxy_hostname }}
 Server={{ zabbix_server_ip }}
-ServerPort=10051
-SourceIP={{ pop_network_ipv4_address | split('/') | first }} 
+StatsAllowedIP={{ zabbix_server_ip }}
 ListenPort={{ zabbix_proxy_listenport }}
-ListenIP={{ zabbix_proxy_listenip }}
+SourceIP={{ pop_network_ipv4_address | split('/') | first }}
+
+### GENERAL
+
 PidFile={{ zabbix_proxy_pidfile }}
 SocketDir={{ zabbix_proxy_socket_dir }}
-LogFile={{ zabbix_proxy_logfile }}
-LogFileSize={{ zabbix_proxy_logfile_size }}
-DebugLevel={{ zabbix_proxy_debug_level }}
 
-# --- Parâmetros de Processos ---
+### PROCESSES
 StartPollers={{ zabbix_proxy_startpollers }}
 StartPreprocessors={{ zabbix_proxy_startpreprocessors }}
 StartPollersUnreachable={{ zabbix_proxy_startpollersunreachable }}
+#StartHistoryPollers={{ zabbix_proxy_starthistorypollers }}
 StartTrappers={{ zabbix_proxy_starttrappers }}
 StartPingers={{ zabbix_proxy_startpingers }}
 StartDiscoverers={{ zabbix_proxy_startdiscoverers }}
@@ -33,19 +41,31 @@ StartDBSyncers={{ zabbix_proxy_startdbsyncers }}
 StartIPMIPollers={{ zabbix_proxy_startipmipollers }}
 StartVMwareCollectors={{ zabbix_proxy_startvmwarecollectors }}
 
-# --- Configuração de Banco de Dados e Cache ---
-DBName={{ zabbix_proxy_dbname }}
-ProxyBufferMode={{ zabbix_proxy_buffermode }}
-ProxyMemoryBufferSize={{ zabbix_proxy_memory_buffer_size }}
+
+### CACHE
 CacheSize={{ zabbix_proxy_cachesize }}
 HistoryCacheSize={{ zabbix_proxy_historycachesize }}
 HistoryIndexCacheSize={{ zabbix_proxy_historyindexcachesize }}
-ProxyOfflineBuffer={{ zabbix_proxy_offline_buffer }}
-ProxyLocalBuffer={{ zabbix_proxy_proxybuffer }}
-AllowUnsupportedDBVersions={{ zabbix_proxy_allow_unsupported_db }}
 
-# --- Timers e Timeout ---
-HeartbeatFrequency={{ zabbix_proxy_heartbeat_frequency }}
+
+### TLS
+TLSConnect={{ zabbix_proxy_tls_connect }}
+TLSAccept={{ zabbix_proxy_tls_accept }}
+TLSPSKIdentity={{ zabbix_proxy_psk_identity }}
+TLSPSKFile={{ zabbix_proxy_psk_file }}
+
+### LOG
+LogFile={{ zabbix_proxy_logfile }}
+LogType={{ zabbix_proxy_logtype }}
+LogFileSize={{ zabbix_proxy_logfile_size }}
+DebugLevel={{ zabbix_proxy_debug_level }}
+
+#### LOCAL DATABASE
+DBName={{ zabbix_proxy_dbname }}
+ProxyOfflineBuffer={{ zabbix_proxy_offline_buffer }}
+
+### TIMERS
+#HeartbeatFrequency={{ zabbix_proxy_heartbeat_frequency }}
 ConfigFrequency={{ zabbix_proxy_config_frequency }}
 DataSenderFrequency={{ zabbix_proxy_datasender_frequency }}
 HousekeepingFrequency={{ zabbix_proxy_housekeeping_frequency }}
@@ -55,14 +75,17 @@ UnreachablePeriod={{ zabbix_proxy_unreachable_period }}
 UnavailableDelay={{ zabbix_proxy_unavailable_delay }}
 UnreachableDelay={{ zabbix_proxy_unreachable_delay }}
 
-# --- TLS ---
-TLSConnect={{ zabbix_proxy_tls_connect }}
-TLSAccept={{ zabbix_proxy_tls_accept }}
-TLSPSKIdentity={{ zabbix_proxy_psk_identity }}
-TLSPSKFile={{ zabbix_proxy_psk_file }}
 
-# --- Caminhos de Binários e Arquivos ---
-ExternalScripts=/usr/lib/zabbix/externalscripts
+### FPING
 FpingLocation={{ zabbix_proxy_fping_location }}
 Fping6Location={{ zabbix_proxy_fping6_location }}
+
+### REMOTE COMMANDS
+EnableRemoteCommands={{ zabbix_proxy_enable_remote_commands }}
+LogRemoteCommands={{ zabbix_proxy_log_remote_commands }}
+
+### DATABASE COMPATIBILITY
+AllowUnsupportedDBVersions={{ zabbix_proxy_allow_unsupported_db }}
+
+### SSH KEYS
 SSHKeyLocation={{ zabbix_proxy_ssh_key_location }}

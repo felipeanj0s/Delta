@@ -8,19 +8,23 @@
 - name: Configurar Zabbix Proxy e Agent
   hosts: all
   become: yes
-  vars_files:
-    - group_vars/all.yml
-    - group_vars/ce.yml
   tasks:
+    - name: Executar role setup_context
+      include_role:
+        name: setup_context
+
     - name: Executar role net_security
       include_role:
         name: net_security
+
     - name: Executar role zabbix_proxy
       include_role:
         name: zabbix_proxy
+
     - name: Executar role zabbix_agent
       include_role:
         name: zabbix_agent
+        
     - name: Executar role zabbix_server_register_proxy
       include_role:
         name: zabbix_server_register_proxy

@@ -1,6 +1,6 @@
 # ======================================================================
 # GT Monitoramento 2025
-# Role: zabbix_server_register_proxy (versão otimizada)
+# Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
 # ======================================================================
 ---
 
@@ -45,6 +45,8 @@
 
 # ----------------------------------------------------------------------
 # Criação do Proxy (apenas se não existir)
+
+# https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api
 # ----------------------------------------------------------------------
 - name: API | Criar o Proxy se não existir
   ansible.builtin.uri:
@@ -60,9 +62,9 @@
       params:
         name: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: "{{ proxy_operating_mode | default(1) }}"   # 0=ativo, 1=passivo
-        tls_connect: "{{ proxy_tls_connect | default(2) }}"        # 1=desabilitado, 2=PSK
-        tls_accept: "{{ proxy_tls_accept | default(1) }}"          # 1=ativo
+        operating_mode: "{{ proxy_operating_mode | default(1) }}"  
+        tls_connect: "{{ proxy_tls_connect | default(2) }}"        
+        tls_accept: "{{ proxy_tls_accept | default(1) }}"         
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
       id: 1
@@ -71,7 +73,7 @@
   when:
     - proxy_api_psk_key is defined
     - zabbix_proxy_get_response.json.result is defined
-    - zabbix_proxy_get_response.json.result | length == 0
+    - zabbix_proxy_get_response.json.result | default([]) | length == 0
 
 # ----------------------------------------------------------------------
 # Debug final

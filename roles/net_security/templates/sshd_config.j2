@@ -1,16 +1,17 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Template de Configuração do OpenSSH Server (sshd) - Versão Sucinta
-# Descrição: Este template gera o arquivo /etc/ssh/sshd_config com
-#            as configurações essenciais e seguras, baseadas em variáveis.
+# Template de Configuração do OpenSSH Server (sshd_config.j2)
+# Descrição: Configuração essencial e segura do SSH baseada em variáveis do Ansible.
 # ==============================================================================
 
 # --- Parâmetros de Conexão e Segurança ---
 Port {{ ssh_port }}
 Protocol 2
 
-# Desabilitar login de root por senha quando a porta é customizada
+# Login root
 PermitRootLogin {{ 'prohibit-password' if ssh_port != 22 else 'no' }}
+
+# Autenticação por senha
 PasswordAuthentication yes
 
 # --- Chaves de Autenticação e Host ---
@@ -18,13 +19,13 @@ HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_dsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
 HostKey /etc/ssh/ssh_host_ed25519_key
-AuthorizedKeysFile  %h/.ssh/authorized_keys
+AuthorizedKeysFile %h/.ssh/authorized_keys
 
 # --- Parâmetros de Sessão e Log ---
 UsePrivilegeSeparation yes
 SyslogFacility AUTH
 LogLevel INFO
-LoginGraceTime 120
+LoginGraceTime {{ ssh_login_grace_time | default(120) }}
 StrictModes yes
 IgnoreRhosts yes
 PermitEmptyPasswords no
@@ -34,9 +35,13 @@ PrintMotd no
 PrintLastLog yes
 TCPKeepAlive yes
 
-# --- Outras Configurações ---
+# --- Banner de aviso ---
 Banner /etc/issue.net
+
+# --- Ambiente e subsistemas ---
 AcceptEnv LANG LC_*
 Subsystem sftp /usr/lib/openssh/sftp-server
 UsePAM yes
+
+# --- Inclusão de configurações adicionais ---
 Include /etc/ssh/sshd_config.d/*.conf

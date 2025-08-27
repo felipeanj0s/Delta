@@ -6,8 +6,8 @@
 
 # ==============================================================================
 # --- Instalação do Zabbix Agent ---
-# Instala o pacote do Zabbix Agent, conforme definido na variável `zabbix_agent_package`.
-# O `update_cache: yes` garante que o cache de pacotes seja atualizado antes da instalação.
+# Instala o pacote do Zabbix Agent, conforme definido na variável "zabbix_agent_package".
+# O 'update_cache: yes' garante que o cache de pacotes seja atualizado antes da instalação.
 # ==============================================================================
 - name: Instalar Zabbix Agent
   ansible.builtin.apt:
@@ -18,7 +18,7 @@
 # ==============================================================================
 # --- Geração e Configuração da Chave PSK para Criptografia (Agent) ---
 # Esta seção gera uma chave PSK, cria o arquivo no servidor e define
-# as permissões de forma segura e idempotente.
+# as permissões.
 # ==============================================================================
 
 # 1. Verificar se o arquivo PSK já existe
@@ -45,7 +45,7 @@
   when: not agent_psk_file_status.stat.exists
   changed_when: true
 
-# 4. Exibir a chave PSK para o usuário (IMPORTANTE: você precisará deste valor)
+# 4. Exibir a chave PSK para o usuário
 - name: Exibir valor da chave PSK do agente
   ansible.builtin.debug:
     msg: "VALOR DA CHAVE PSK DO AGENTE: {{ agent_psk_value.stdout }}"
@@ -64,9 +64,9 @@
 
 # ==============================================================================
 # --- Configuração do Zabbix Agent ---
-# Aplica o arquivo de configuração do agente (`zabbix_agent2.conf.j2`) no servidor.
+# Aplica o arquivo de configuração do agente ("zabbix_agent2.conf.j2") no servidor.
 # Este template usa as variáveis para preencher a configuração.
-# O `notify` aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
+# O "notify" aciona o handler 'Reiniciar Zabbix Agent' se o arquivo for alterado.
 # ==============================================================================
 - name: Configurar Zabbix Agent
   ansible.builtin.template:
