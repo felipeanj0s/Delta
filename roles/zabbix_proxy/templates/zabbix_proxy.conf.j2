@@ -65,7 +65,7 @@ DBName={{ zabbix_proxy_dbname }}
 ProxyOfflineBuffer={{ zabbix_proxy_offline_buffer }}
 
 ### TIMERS
-#HeartbeatFrequency={{ zabbix_proxy_heartbeat_frequency }}
+HeartbeatFrequency={{ zabbix_proxy_heartbeat_frequency | default(60) }}
 ConfigFrequency={{ zabbix_proxy_config_frequency }}
 DataSenderFrequency={{ zabbix_proxy_datasender_frequency }}
 HousekeepingFrequency={{ zabbix_proxy_housekeeping_frequency }}

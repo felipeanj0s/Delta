@@ -25,7 +25,6 @@
     ips_para_testar: >-
       {{
         [
-          pop_network_interface,
           zabbix_server_ip,
           pop_network_ipv4_address.split('/')[0],
           pop_network_ipv6_address.split('/')[0],
@@ -143,14 +142,16 @@
 # ==============================================================================
 - name: Configurar regras UFW (entrada)
   ansible.builtin.ufw:
-    rule: "{{ item.rule }}"
-    from_ip: "{{ item.from | default(omit) }}"
-    to_ip: "{{ item.to | default(omit) }}"
-    port: "{{ item.port | default(omit) }}"
-    proto: "{{ item.proto | default(omit) }}"
-    comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ ufw_rules }}"
-  when: item.direction is not defined or item.direction == 'in'
+    rule: "{{ item.0.rule }}"
+    from_ip: "{{ item.1 }}"
+    to_ip: "{{ item.0.to | default(omit) }}"
+    port: "{{ item.0.port | default(omit) }}"
+    proto: "{{ item.0.proto | default(omit) }}"
+    comment: "{{ item.0.comment | default(omit) }}"
+  loop: "{{ ufw_rules | subelements('from') }}"
+  when: item.0.direction is not defined or item.0.direction == 'in'
+
+
 
 # ==============================================================================
 # --- Configuração de Regras do UFW (Outbound) ---
@@ -158,15 +159,16 @@
 # ==============================================================================
 - name: Configurar regras UFW (saída)
   ansible.builtin.ufw:
-    rule: "{{ item.rule }}"
-    direction: "{{ item.direction }}"
-    from_ip: "{{ item.from | default(omit) }}"
-    to_ip: "{{ item.to | default(omit) }}"
-    port: "{{ item.port | default(omit) }}"
-    proto: "{{ item.proto | default(omit) }}"
-    comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ ufw_rules }}"
-  when: item.direction is defined and item.direction == 'out'
+    rule: "{{ item.0.rule }}"
+    direction: "{{ item.0.direction }}"
+    from_ip: "{{ item.1 }}"
+    to_ip: "{{ item.0.to | default(omit) }}"
+    port: "{{ item.0.port | default(omit) }}"
+    proto: "{{ item.0.proto | default(omit) }}"
+    comment: "{{ item.0.comment | default(omit) }}"
+  loop: "{{ ufw_rules | subelements('from') }}"
+  when: item.0.direction is defined and item.0.direction == 'out'
+
 
 # ==============================================================================
 # --- Ativação do Firewall ---

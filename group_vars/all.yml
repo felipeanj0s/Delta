@@ -74,7 +74,7 @@ pop_network_routes:
 # https://gist.github.com/zunkree/7385258
 # ==============================================================================
 ### PROXY MODE
-zabbix_proxy_mode: 1
+zabbix_proxy_mode: 0
 zabbix_proxy_buffermode: "hybrid"
 zabbix_proxy_memory_buffer_size: "256M"
 zabbix_proxy_proxybuffer: 0
@@ -216,52 +216,51 @@ fail2ban_bantime: 24h
 fail2ban_ignore_ips:
   - "127.0.0.1/8"
   - "{{ pop_network_ipv4_gateway }}"
-  - "{{ pop_network_addresses | join(',') }}"
-  - "{{ zabbix_active_server_ips | join(',') }}"
+  - "{{ zabbix_active_server_ips }}"
+  - "{{ pop_network_addresses }}"
 
-# --- UFW ---
 ufw_rules:
-  # SSH liberado para gateway e IPs relevantes do POP
+  # SSH - Gateway
   - rule: allow
-    from: "{{ pop_network_ipv4_gateway }}"
+    from: ["{{ pop_network_ipv4_gateway }}"]
     port: "{{ ssh_port }}"
     proto: tcp
-    comment: "SSH - Gateway IPV4"
+    comment: "SSH - Gateway IPv4"
     direction: in
 
+  # SSH - POP
   - rule: allow
-    from: "{{ pop_network_addresses | join(',') }}"
+    from: "{{ pop_network_addresses }}"
     port: "{{ ssh_port }}"
     proto: tcp
     comment: "SSH - IPs do POP"
     direction: in
 
-  # Zabbix Agent liberado para gateway
+  # Zabbix - Gateway
   - rule: allow
-    from: "{{ pop_network_ipv4_gateway }}"
+    from: ["{{ pop_network_ipv4_gateway }}"]
     port: 10050
     proto: tcp
     comment: "Zabbix Agent - Gateway"
     direction: in
 
-  # Zabbix Proxy liberado para gateway
   - rule: allow
-    from: "{{ pop_network_ipv4_gateway }}"
+    from: ["{{ pop_network_ipv4_gateway }}"]
     port: 10051
     proto: tcp
     comment: "Zabbix Proxy - Gateway"
     direction: in
 
-  # Zabbix Agent/Proxy liberado para servidores centrais ativos
+  # Zabbix - Active Servers
   - rule: allow
-    from: "{{ zabbix_active_server_ips | join(',') }}"
+    from: "{{ zabbix_active_server_ips }}"
     port: 10050
     proto: tcp
     comment: "Zabbix Agent - Active Servers"
     direction: in
 
   - rule: allow
-    from: "{{ zabbix_active_server_ips | join(',') }}"
+    from: "{{ zabbix_active_server_ips }}"
     port: 10051
     proto: tcp
     comment: "Zabbix Proxy - Active Servers"
