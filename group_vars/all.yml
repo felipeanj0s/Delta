@@ -117,10 +117,20 @@ zabbix_proxy_historycachesize: 64M
 zabbix_proxy_historyindexcachesize: 32M
 
 ### TLS
-zabbix_proxy_tls_connect: "psk"
-zabbix_proxy_tls_accept: "psk"
+zabbix_proxy_tls_connect: 1   # PSK
+zabbix_proxy_tls_accept: 1    # PSK
 zabbix_proxy_psk_identity: "{{ zabbix_proxy_hostname }}-psk"
 zabbix_proxy_psk_file: "/etc/zabbix/psk/{{ zabbix_proxy_hostname }}.psk"
+
+# nota 
+#Na API do Zabbix, os valores são inteiros:
+# tls_connect
+#   1 → PSK
+#   2 → Certificado
+# tls_accept (bitmask, pode somar valores)
+#   1 → PSK
+#   2 → Certificado
+#   4 → Sem criptografia
 
 ### LOG
 zabbix_proxy_logfile: "/var/log/zabbix/zabbix_proxy.log"
@@ -181,9 +191,8 @@ zabbix_agent_server: "{{ zabbix_server_ip }}"
 zabbix_agent_listenport: 10050
 
 ### ACTIVE CHECKS
-zabbix_agent_source_ip: "{{ pop_network_ipv4_address | split('/') | first }}"
 zabbix_agent_serveractive_list: "{{ zabbix_active_server_ips }}"
-zabbix_agent_hostname: "{{ zabbix_agent_hostname }}"
+zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 zabbix_agent_refresh_active_checks: 300
 zabbix_agent_buffer_send: 10
 zabbix_agent_buffer_size: 100

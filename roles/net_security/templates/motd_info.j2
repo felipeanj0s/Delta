@@ -1,7 +1,7 @@
 #!/bin/bash
 # ======================================================================
 # GT Monitoramento 2025
-# Script de Geração de Mensagem do Dia (MOTD)
+# Script de Geração de Mensagem do Dia (MOTD) - Clean & Modern Edition
 # ======================================================================
 
 set -euo pipefail
@@ -26,53 +26,66 @@ get_status() {
         local state
         state=$(systemctl is-active "$service" || echo "inactive")
         case "$state" in
-            active) echo -e "${GREEN}${state}${RESET}" ;;
-            inactive) echo -e "${RED}${state}${RESET}" ;;
+            active) echo -e "${GREEN}✔ ativo${RESET}" ;;
+            inactive) echo -e "${RED}✘ inativo${RESET}" ;;
             *) echo -e "${YELLOW}${state}${RESET}" ;;
         esac
     else
-        echo -e "${YELLOW}not installed${RESET}"
+        echo -e "${YELLOW}não instalado${RESET}"
     fi
 }
 
 # -------------------------
-# Variáveis do sistema (com fallback)
+# Variáveis do sistema
 # -------------------------
 DEBIAN_VERSION=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')
-IPV4_ADDR="${IPV4_ADDR:-127.0.0.1}"
-ZABBIX_AGENT="${ZABBIX_AGENT:-zabbix-agent2}"
-ZABBIX_PROXY="${ZABBIX_PROXY:-zabbix-proxy}"
-LAST_LOGIN=$(last -n 1 | head -1)
-UPTIME=$(uptime -p)
+HOSTNAME=$(hostname)
+IPV4_ADDRS=($(hostname -I | tr ' ' '\n' | grep -v '^127\.0\.0\.1$'))
+ZABBIX_AGENT="zabbix-agent2"
+ZABBIX_PROXY="zabbix-proxy"
+LAST_LOGIN=$(last -n 2 -w | awk 'NR==2 {print $1, $2, $3, $4, $5, $6}')
+UPTIME=$(uptime -p | sed 's/up //')
 USERS=$(who | wc -l)
-MEMORY=$(free -h | awk '/^Mem:/ {printf "%s/%s (%.0f%%)\n",$3,$2,$3/$2*100}')
-DISK_ROOT=$(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')
+MEMORY=$(free -h | awk '/^Mem:/ {printf "%s / %s (%.0f%%)\n",$3,$2,$3/$2*100}')
+DISK_ROOT=$(df -h / | awk 'NR==2 {print $3 " / " $2 " (" $5 ")"}')
 ZABBIX_AGENT_STATUS=$(get_status "$ZABBIX_AGENT")
 ZABBIX_PROXY_STATUS=$(get_status "$ZABBIX_PROXY")
 
 # -------------------------
 # Cabeçalho
 # -------------------------
+clear
 echo -e "\n${BLUE}################################################################${RESET}"
-echo -e "        ${GREEN}Bem-vindo, ${ZABBIX_PROXY}${RESET}"
+echo -e "        ${CYAN}💻 Bem-vindo ao servidor: ${GREEN}$HOSTNAME${RESET}"
 echo -e "${BLUE}################################################################${RESET}\n"
 
 # -------------------------
 # Informações detalhadas
 # -------------------------
-echo -e " ${GREEN}- Acesso Concedido.${RESET} Toda atividade está sendo monitorada."
-echo -e " ${YELLOW}- Versão do SO:${RESET} $DEBIAN_VERSION"
-echo -e " ${YELLOW}- Servidor IPv4:${RESET} $IPV4_ADDR"
-echo -e " ${YELLOW}- Versão do Zabbix Agent:${RESET} $ZABBIX_AGENT"
-echo -e " ${YELLOW}- Último login:${RESET} $LAST_LOGIN"
-echo -e " ${YELLOW}- Uptime:${RESET} $UPTIME"
-echo -e " ${YELLOW}- Usuários conectados:${RESET} $USERS"
-echo -e " ${YELLOW}- Memória usada:${RESET} $MEMORY"
-echo -e " ${YELLOW}- Disco raiz:${RESET} $DISK_ROOT"
-echo -e " ${YELLOW}- Status Zabbix Agent:${RESET} $ZABBIX_AGENT_STATUS"
-echo -e " ${YELLOW}- Status Zabbix Proxy:${RESET} $ZABBIX_PROXY_STATUS\n"
+echo -e " ${YELLOW}➡ Versão do SO:${RESET}           $DEBIAN_VERSION"
+
+# Endereços IPv4
+if [ ${#IPV4_ADDRS[@]} -eq 1 ]; then
+    echo -e " ${YELLOW}➡ Endereço IPv4:${RESET}        ${IPV4_ADDRS[0]}"
+else
+    echo -e " ${YELLOW}➡ Endereços IPv4:${RESET}"
+    for ip in "${IPV4_ADDRS[@]}"; do
+        echo -e "     • $ip"
+    done
+fi
+
+echo -e " ${YELLOW}➡ Último login:${RESET}          ${LAST_LOGIN:-N/A}"
+echo -e " ${YELLOW}➡ Uptime:${RESET}                $UPTIME"
+echo -e " ${YELLOW}➡ Usuários conectados:${RESET}   $USERS"
+echo -e " ${YELLOW}➡ Memória usada:${RESET}         $MEMORY"
+echo -e " ${YELLOW}➡ Disco raiz:${RESET}            $DISK_ROOT\n"
+
+echo -e " ${YELLOW}➡ Zabbix Agent:${RESET}          $ZABBIX_AGENT_STATUS"
+echo -e " ${YELLOW}➡ Zabbix Proxy:${RESET}          $ZABBIX_PROXY_STATUS\n"
 
 # -------------------------
 # Rodapé
 # -------------------------
+echo -e "${BLUE}################################################################${RESET}"
+echo -e "   ${GREEN}Acesso Concedido.${RESET} ${CYAN}Toda atividade está sendo monitorada.${RESET}"
 echo -e "${BLUE}################################################################${RESET}\n"
