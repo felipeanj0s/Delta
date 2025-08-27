@@ -62,7 +62,7 @@
       params:
         name: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: "{{ proxy_operating_mode | default(1) }}"  
+        operating_mode: "{{ proxy_operating_mode | default(0) }}"   # atenção aqui. se defalut for alterado para 1, ele sobrescreve o valor da variavel geral.
         tls_connect: "{{ proxy_tls_connect | default(2) }}"        
         tls_accept: "{{ proxy_tls_accept | default(1) }}"         
         tls_psk_identity: "{{ proxy_api_psk_identity }}"

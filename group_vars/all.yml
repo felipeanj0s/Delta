@@ -75,6 +75,14 @@ pop_network_routes:
 # ==============================================================================
 ### PROXY MODE
 zabbix_proxy_mode: 0
+#ProxyMode
+#The proxy operating mode.
+#0 - proxy in the active mode
+#1 - proxy in the passive mode
+# Default: 0
+#Range: 0-1
+# Fonte: https://www.zabbix.com/documentation/current/en/manual/appendix/config/zabbix_proxy
+
 zabbix_proxy_buffermode: "hybrid"
 zabbix_proxy_memory_buffer_size: "256M"
 zabbix_proxy_proxybuffer: 0
