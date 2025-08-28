@@ -1,3 +1,7 @@
+Fechou, macho! 💪
+Aqui está o texto já no formato **Markdown** (igual ao que tu mandou), só que revisado e melhorado:
+
+````markdown
 # Projeto Delta: Provisionamento Automatizado de Zabbix Proxy com Ansible
 
 ![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)  
@@ -62,27 +66,43 @@ No **servidor de destino** devem estar disponíveis:
 ```bash
 git clone https://github.com/felipeanj0s/Delta.git
 cd Delta/
+````
 
-##### Análise do Comando de Execução
+**2. Execute o playbook**
 
-A tabela abaixo detalha cada parâmetro do comando:
+Substitua `ce` pelo grupo correspondente ao host no inventário:
 
-| Parâmetro           | Descrição                                                                                                                              |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `ansible-playbook`  | O comando executável do Ansible que interpreta e executa os playbooks.                                                                 |
-| `-i hosts`          | A flag `-i` (ou `--inventory`) especifica qual arquivo de inventário usar. Este arquivo lista os hosts onde a automação será aplicada.   |
-| `prov_zbxproxy.yml` | O nome do arquivo do playbook principal que será executado.                                                                            |
-| `--limit ce`        | Restringe a execução do playbook apenas aos hosts pertencentes ao grupo `[ce]` dentro do inventário. Essencial para o contexto do POP. |
-| `-K`                | Forma curta de `--ask-become-pass`. Solicita a senha do `sudo` no início da execução, necessária para tarefas que exigem privilégios.   |
-| `-v`, `-vv`, `-vvv` | Controla o nível de detalhes (verbosidade) da saída.                                                                                   |
+```bash
+ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K
+```
 
-## Limitações Conhecidas
+### 🔍 Detalhe do comando
 
-  - **Registro da Interface do Proxy**: Devido a uma inconsistência na API do Zabbix Server alvo, a automação cria o proxy com sucesso, mas não consegue adicionar a sua interface de rede (endereço IP).
-  - **Ação Manual Necessária**: Após a execução bem-sucedida do playbook, é necessário acessar a interface web do Zabbix (`Administration > Proxies`), selecionar o proxy recém-criado e adicionar manualmente seu endereço IP no campo "Proxy address".
+| Parâmetro           | Descrição                                                       |
+| ------------------- | --------------------------------------------------------------- |
+| `ansible-playbook`  | Executa o playbook especificado.                                |
+| `-i hosts`          | Define o inventário a ser utilizado.                            |
+| `prov_zbxproxy.yml` | Playbook principal da automação.                                |
+| `--limit ce`        | Restringe a execução apenas aos hosts do grupo `[ce]`.          |
+| `-K`                | Solicita a senha do `sudo` (equivalente a `--ask-become-pass`). |
+| `-v`, `-vv`, `-vvv` | Ajusta o nível de verbosidade da saída (útil para depuração).   |
 
-## Autor
+---
 
-  - **GT Monitoramento**
+## ⚠️ Limitações
 
-<!-- end list -->
+* **Registro da interface do proxy**: devido a uma limitação na API do Zabbix Server, o proxy é criado mas sua interface de rede (IP) não é adicionada.
+* **Ação manual necessária**: após a execução, acesse o Zabbix Web → `Administration > Proxies`, selecione o proxy criado e adicione manualmente o **Proxy address** (IP).
+
+---
+
+## 👨‍💻 Autor
+
+* **GT Monitoramento**
+
+```
+
+---
+
+Quer que eu deixe essa versão mais **curta (guia rápido)** ou mantenho esse estilo **documentado e explicativo** pra time interno?
+```
