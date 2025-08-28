@@ -91,5 +91,4 @@ ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K
 
 * **GT Monitoramento**
 
-```
 
