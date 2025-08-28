@@ -93,7 +93,3 @@ ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K
 
 ```
 
----
-
-Quer que eu deixe essa versão mais **curta (guia rápido)** ou mantenho esse estilo **documentado e explicativo** pra time interno?
-```
