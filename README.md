@@ -5,10 +5,6 @@ Com certeza. Entendido.
 Abaixo está a versão final e corrigida de cada arquivo chave. Você pode usar este material como a "versão de ouro" do seu projeto.
 
 -----
-
-### 1\. `README.md` (Completo e Atualizado)
-
-````markdown
 # Projeto Delta: Provisionamento Automatizado de Zabbix Proxy com Ansible
 
 ![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)
@@ -56,9 +52,8 @@ A automação foi projetada para ser executada localmente no servidor que será 
 
 Clone o projeto para o servidor de destino.
 ```bash
-git clone [https://github.com/felipeanj0s/Delta.git](https://github.com/felipeanj0s/Delta.git)
+git clone 
 cd Delta/
-````
 
 **2. Execute o Playbook**
 
