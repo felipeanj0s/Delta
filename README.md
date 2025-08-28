@@ -1,7 +1,3 @@
-Fechou, macho! 💪
-Aqui está o texto já no formato **Markdown** (igual ao que tu mandou), só que revisado e melhorado:
-
-````markdown
 # Projeto Delta: Provisionamento Automatizado de Zabbix Proxy com Ansible
 
 ![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)  
@@ -66,8 +62,6 @@ No **servidor de destino** devem estar disponíveis:
 ```bash
 git clone https://github.com/felipeanj0s/Delta.git
 cd Delta/
-````
-
 **2. Execute o playbook**
 
 Substitua `ce` pelo grupo correspondente ao host no inventário:
