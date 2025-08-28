@@ -52,8 +52,9 @@ A automação foi projetada para ser executada localmente no servidor que será 
 
 Clone o projeto para o servidor de destino.
 ```bash
-git clone [https://github.com/felipeanj0s/Delta.git](https://github.com/felipeanj0s/Delta.git)
+git clone [https://github.com/felipeanj0s/Delta.git](https://github.com/felipeanj0s/Delta.git) 
 cd Delta/
+```
 
 **2. Execute o Playbook**
 
