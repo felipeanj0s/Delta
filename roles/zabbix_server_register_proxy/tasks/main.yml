@@ -76,6 +76,11 @@
         tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
+        interface:
+          ip: "{{ pop_network_ipv4_address | split('/') | first }}"
+          dns: ""
+          useip: 1
+          port: "{{ zabbix_proxy_listenport }}"
       id: 1
     validate_certs: no
     follow_redirects: all
