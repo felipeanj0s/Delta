@@ -1,11 +1,16 @@
 # ======================================================================
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
+# COMPATÍVEL COM O SEU AMBIENTE (Zabbix 7.2.12)
+# Fluxo:
+# 1) proxy.get                -> verifica se existe
+# 2) proxy.create             -> cria proxy em modo ativo
+# 3) proxy.update             -> TLS e descrição
 # ======================================================================
 ---
 
 # ----------------------------------------------------------------------
-# Instalação de Dependências
+# Dependências
 # ----------------------------------------------------------------------
 - name: Garantir que o PIP esteja instalado
   become: yes
@@ -21,9 +26,9 @@
     extra_args: --break-system-packages
 
 # ----------------------------------------------------------------------
-# Verificação do Proxy
+# Passo 1: Verificar se o Proxy já existe
 # ----------------------------------------------------------------------
-- name: API | Verificar se o Proxy já está cadastrado no Zabbix Server
+- name: API | Verificar se o Proxy já existe no Zabbix Server
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -35,20 +40,24 @@
       jsonrpc: "2.0"
       method: "proxy.get"
       params:
-        output: ["proxyid","name"]
+        output: ["proxyid", "name"]
         filter:
           name: ["{{ zabbix_proxy_hostname }}"]
       id: 1
     validate_certs: no
+    follow_redirects: all
   register: zabbix_proxy_get_response
-  when: proxy_api_psk_key is defined
+  failed_when: "'error' in zabbix_proxy_get_response.json"
+
+- name: Fatos | Definir se existe e o ID
+  ansible.builtin.set_fact:
+    proxy_exists: "{{ (zabbix_proxy_get_response.json.result | default([])) | length > 0 }}"
+    existing_proxy_id: "{{ (zabbix_proxy_get_response.json.result | default([]) | first).proxyid | default(omit) }}"
 
 # ----------------------------------------------------------------------
-# Criação do Proxy (apenas se não existir)
-
-# https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api
+# Passo 2: Criar o Proxy (modo ativo) se não existir
 # ----------------------------------------------------------------------
-- name: API | Criar o Proxy se não existir
+- name: API | Criar o Proxy (modo ativo) se não existir
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -62,28 +71,62 @@
       params:
         name: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: "{{ proxy_operating_mode | default(0) }}"   # atenção aqui. se defalut for alterado para 1, ele sobrescreve o valor da variavel geral.
-        tls_connect: "{{ proxy_tls_connect | default(2) }}"        
-        tls_accept: "{{ proxy_tls_accept | default(1) }}"         
+        operating_mode: 0   # 0 = ativo
+        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
         tls_psk_identity: "{{ proxy_api_psk_identity }}"
         tls_psk: "{{ proxy_api_psk_key }}"
       id: 1
     validate_certs: no
+    follow_redirects: all
   register: zabbix_proxy_create_response
-  when:
-    - proxy_api_psk_key is defined
-    - zabbix_proxy_get_response.json.result is defined
-    - zabbix_proxy_get_response.json.result | default([]) | length == 0
+  failed_when: "'error' in zabbix_proxy_create_response.json"
+  when: not proxy_exists
+
+- name: Fatos | Definir ID do proxy recém-criado
+  ansible.builtin.set_fact:
+    new_proxy_id: "{{ zabbix_proxy_create_response.json.result.proxyids[0] }}"
+  when: not proxy_exists
+
+- name: Fatos | Definir proxy_id_final
+  ansible.builtin.set_fact:
+    proxy_id_final: "{{ (not proxy_exists) | ternary(new_proxy_id, existing_proxy_id) }}"
+
+# ----------------------------------------------------------------------
+# Passo 3: Atualizar TLS e descrição do Proxy
+# ----------------------------------------------------------------------
+- name: API | Atualizar TLS/descrição do Proxy
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.update"
+      params:
+        proxyid: "{{ proxy_id_final }}"
+        description: "Proxy {{ zabbix_proxy_hostname }} gerenciado via Ansible"
+        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
+        tls_psk_identity: "{{ proxy_api_psk_identity }}"
+        tls_psk: "{{ proxy_api_psk_key }}"
+      id: 1
+    validate_certs: no
+    follow_redirects: all
+  register: zabbix_proxy_update_tls_response
+  failed_when: "'error' in zabbix_proxy_update_tls_response.json"
 
 # ----------------------------------------------------------------------
 # Debug final
 # ----------------------------------------------------------------------
-- name: Debug | Exibir resposta da API
+- name: Debug | Resultado
   ansible.builtin.debug:
-    msg: >-
-      {% if zabbix_proxy_create_response is defined %}
-        {{ zabbix_proxy_create_response.json }}
-      {% else %}
-        {{ zabbix_proxy_get_response.json }}
-      {% endif %}
-  when: proxy_api_psk_key is defined
+    msg:
+      - "Proxy ID final: {{ proxy_id_final }}"
+      - "Proxy já existia? {{ proxy_exists }}"
+      - "Proxy GET: {{ zabbix_proxy_get_response.json }}"
+      - "Proxy CREATE: {{ zabbix_proxy_create_response.json | default('N/A') }}"
+      - "Proxy UPDATE TLS/descr: {{ zabbix_proxy_update_tls_response.json }}"
