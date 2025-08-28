@@ -1,41 +1,35 @@
 # ======================================================================
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
-# VERSÃO FINAL COM MÓDULO DEDICADO community.zabbix
+# VERSÃO COM LÓGICA DE PORTA CORRIGIDA
 # ======================================================================
 ---
 - name: Garantir que o Proxy esteja criado e configurado corretamente no Zabbix Server
+  # Definimos as variáveis de conexão aqui, para o plugin httpapi usar
+  vars:
+    # Primeiro, extrai a porta. Se estiver vazia, define 80 ou 443 com base no protocolo.
+    ansible_httpapi_port: "{{ (zabbix_server_url | urlsplit('port')) or (80 if zabbix_server_url.startswith('http://') else 443) }}"
+    
+    ansible_host: "{{ zabbix_server_url | urlsplit('hostname') }}"
+    ansible_httpapi_use_ssl: "{{ zabbix_server_url.startswith('https://') }}"
+    ansible_httpapi_validate_certs: false
+    ansible_zabbix_url_path: "{{ (zabbix_server_url | urlsplit('path')).split('/')[1] | default('zabbix') }}"
+    ansible_zabbix_auth_key: "{{ zabbix_api_token }}"
+    ansible_connection: ansible.netcommon.httpapi
+
+  
   community.zabbix.zabbix_proxy:
-    # --- Parâmetros de Conexão com a API ---
-    server_url: "{{ zabbix_server_url }}"
-    login_user: "Admin" # O nome de um usuário com permissões de Super Admin
-    api_token: "{{ zabbix_api_token }}"
-    validate_certs: false # Necessário se seu Zabbix usa HTTPS com cert auto-assinado
-
-    # --- Configuração do Proxy ---
     proxy_name: "{{ zabbix_proxy_hostname }}"
-    state: present # Garante que o proxy exista. Se não existir, cria. Se existir, atualiza.
+    state: present
     description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-
-    # --- Modo de Operação ---
-    # O módulo espera 'active' ou 'passive', então convertemos 0 para 'active'
     operating_mode: "{{ 'active' if zabbix_proxy_mode == 0 else 'passive' }}"
-    # Para proxies ativos, 'allowed_addresses' é o novo parâmetro
     allowed_addresses: "{{ zabbix_proxy_hostname }}"
-
-    # --- Configuração da Interface (para proxies passivos) ---
-    # O módulo lida com a lógica de criar a interface. Usamos o novo parâmetro 'address'.
     address: "{{ pop_network_ipv4_address.split('/')[0] }}"
     port: "{{ zabbix_proxy_listenport | default('10051') | string }}"
-
-    # --- Configuração de Criptografia (TLS com PSK) ---
-    # O módulo espera 'PSK', então convertemos 1 para 'PSK'
     tls_connect: "{{ 'PSK' if zabbix_proxy_tls_connect == 1 else 'no_encryption' }}"
     tls_accept: "{{ 'PSK' if zabbix_proxy_tls_accept == 1 else 'no_encryption' }}"
     tls_psk_identity: "{{ proxy_api_psk_identity }}"
     tls_psk: "{{ proxy_api_psk_key }}"
 
-  # --- Delegação de Tarefa ---
-  # O módulo precisa rodar no nó de controle Ansible, não no host do proxy.
   delegate_to: localhost
   run_once: true
