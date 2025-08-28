@@ -39,8 +39,7 @@ No **servidor de destino** devem estar disponíveis:
 - Usuário com permissões `sudo`  
 - `git`  
 - `python3-pip`  
-- `ansible` (recomendado instalar via `pip`)  
-
+- `ansible` 
 ---
 
 ## ⚙️ Configuração
@@ -56,12 +55,10 @@ No **servidor de destino** devem estar disponíveis:
 ---
 
 ## ▶️ Execução
-
-**1. Clone o repositório**
-
 ```bash
 git clone https://github.com/felipeanj0s/Delta.git
 cd Delta/
+```
 **2. Execute o playbook**
 
 Substitua `ce` pelo grupo correspondente ao host no inventário:
