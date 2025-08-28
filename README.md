@@ -24,17 +24,22 @@ Este projeto utiliza Ansible para automatizar a implantação e configuração c
 
 ## Estrutura do Projeto
 
-Arquivo / Diretório	Descrição
-prov_zbxproxy.yml	Playbook principal que orquestra a execução de todas as roles na ordem correta.
-hosts	Arquivo de inventário que define os hosts de destino e seus grupos (ex: [ce]).
-group_vars/all.yml	Contém as variáveis globais, aplicadas a todos os hosts no inventário (IP do Zabbix Server, token, etc.).
-group_vars/pops_configs/	Diretório que armazena os arquivos de variáveis específicas para cada localidade (POP).
-roles/	Diretório principal que contém todas as roles modulares da automação.
-roles/setup_context/	Role responsável por carregar o arquivo de variáveis correto do POP com base no inventário.
-roles/net_security/	Role que aplica configurações essenciais de rede e segurança (UFW, Fail2Ban, SSH).
-roles/zabbix_proxy/	Role que instala e configura o serviço do Zabbix Proxy no host.
-roles/zabbix_agent/	Role que instala e configura o Zabbix Agent 2 no host.
-roles/zabbix_server_register_proxy/	Role que se comunica com a API do Zabbix Server para registrar o proxy (ou verificar se já existe).
+├── group_vars/
+│   ├── all.yml                 # Variáveis globais para todos os hosts
+│   └── pops_configs/
+│       └── ce.yml              # Variáveis específicas para um POP (ex: Ceará)
+│
+├── roles/
+│   ├── net_security/           # Role para configuração de rede e segurança
+│   ├── setup_context/          # Role para carregar variáveis do POP
+│   ├── zabbix_agent/           # Role para o Zabbix Agent 2
+│   ├── zabbix_proxy/           # Role para o Zabbix Proxy
+│   └── zabbix_server_register_proxy/ # Role para registro na API do Zabbix Server
+│
+├── hosts                       # Arquivo de inventário do Ansible
+└── prov_zbxproxy.yml           # Playbook principal de orquestração
+
+
 ## Pré-requisitos
 
 As seguintes ferramentas devem estar instaladas no servidor de destino antes da execução:
