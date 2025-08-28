@@ -1,94 +1,54 @@
-{% raw %}
 #!/bin/bash
-
 # ======================================================================
-# GT Monitoramento 2025
-# Script de Geração de Mensagem do Dia (MOTD) - Clean & Modern Edition
+# Script de Geração de Mensagem do Dia (MOTD) - Versão Final
 # ======================================================================
 
-set -euo pipefail
-IFS=$'\n\t'
-
-# -------------------------
-# Cores
-# -------------------------
-RED="\033[1;31m"
-GREEN="\033[1;32m"
-YELLOW="\033[1;33m"
-BLUE="\033[1;34m"
-CYAN="\033[1;36m"
-RESET="\033[0m"
-
-# -------------------------
-# Função para checar status de serviços
-# -------------------------
+# --- Função para checar status de serviços ---
 get_status() {
-    local service=$1
-    if systemctl list-unit-files | grep -q "^${service}.service"; then
-        local state
-        state=$(systemctl is-active "$service" || echo "inactive")
-        case "$state" in
-            active) echo -e "${GREEN}✔ ativo${RESET}" ;;
-            inactive) echo -e "${RED}✘ inativo${RESET}" ;;
-            *) echo -e "${YELLOW}${state}${RESET}" ;;
-        esac
+    local service="$1"
+    # Checa se o serviço existe
+    if ! systemctl list-unit-files --type=service | grep -q "^${service}.service"; then
+        echo "nao instalado"
+        return
+    fi
+
+    # Checa se o serviço está ativo
+    if systemctl is-active --quiet "$service"; then
+        echo "ativo"
     else
-        echo -e "${YELLOW}não instalado${RESET}"
+        echo "inativo"
     fi
 }
 
-# -------------------------
-# Variáveis do sistema
-# -------------------------
-DEBIAN_VERSION=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')
+# --- Coleta de Informações ---
 HOSTNAME=$(hostname)
-IPV4_ADDRS=($(hostname -I | tr ' ' '\n' | grep -v '^127\.0\.0\.1$'))
-ZABBIX_AGENT="zabbix-agent2"
-ZABBIX_PROXY="zabbix-proxy"
-LAST_LOGIN=$(last -n 2 -w | awk 'NR==2 {print $1, $2, $3, $4, $5, $6}')
+OS_VERSION=$(grep PRETTY_NAME /etc/os-release | cut -d'=' -f2 | tr -d '"')
+IPV4_ADDR=$(hostname -I | awk '{print $1}')
 UPTIME=$(uptime -p | sed 's/up //')
 USERS=$(who | wc -l)
-MEMORY=$(free -h | awk '/^Mem:/ {printf "%s / %s (%.0f%%)\n",$3,$2,$3/$2*100}')
+# Comando robusto para memória, calculando a partir dos valores em KiB
+MEMORY=$(free | awk '/^Mem:/ {printf "%.0f MiB / %.0f MiB (%.0f%%)", $3/1024, $2/1024, $3/$2*100}')
 DISK_ROOT=$(df -h / | awk 'NR==2 {print $3 " / " $2 " (" $5 ")"}')
-ZABBIX_AGENT_STATUS=$(get_status "$ZABBIX_AGENT")
-ZABBIX_PROXY_STATUS=$(get_status "$ZABBIX_PROXY")
+LAST_LOGIN=$(last -n 1 -w | head -n 1)
 
-# -------------------------
-# Cabeçalho
-# -------------------------
-clear
-echo -e "\n${BLUE}################################################################${RESET}"
-echo -e "        ${CYAN}💻 Bem-vindo ao servidor: ${GREEN}$HOSTNAME${RESET}"
-echo -e "${BLUE}################################################################${RESET}\n"
+# --- Status dos Serviços ---
+ZABBIX_AGENT_STATUS=$(get_status "zabbix-agent2")
+ZABBIX_PROXY_STATUS=$(get_status "zabbix-proxy")
 
-# -------------------------
-# Informações detalhadas
-# -------------------------
-echo -e " ${YELLOW}➡ Versão do SO:${RESET}           $DEBIAN_VERSION"
+# --- Exibição ---
+echo ""
+printf "%-22s: %s\n" "Servidor" "$HOSTNAME"
+printf "%-22s: %s\n" "Sistema Operacional" "$OS_VERSION"
+printf "%-22s: %s\n" "Endereco IPv4" "$IPV4_ADDR"
+printf "%-22s: %s\n" "Tempo de Atividade" "$UPTIME"
+printf "%-22s: %s\n" "Usuarios Conectados" "$USERS"
+printf "%-22s: %s\n" "Uso de Memoria" "$MEMORY"
+printf "%-22s: %s\n" "Uso de Disco (/)" "$DISK_ROOT"
+echo ""
+printf "%-22s: %s\n" "Status Zabbix Agent" "$ZABBIX_AGENT_STATUS"
+printf "%-22s: %s\n" "Status Zabbix Proxy" "$ZABBIX_PROXY_STATUS"
+echo ""
+echo "Ultimo login: $LAST_LOGIN"
+echo ""
 
-# Endereços IPv4
-if [ ${#IPV4_ADDRS[@]} -eq 1 ]; then
-    echo -e " ${YELLOW}➡ Endereço IPv4:${RESET}        ${IPV4_ADDRS[0]}"
-else
-    echo -e " ${YELLOW}➡ Endereços IPv4:${RESET}"
-    for ip in "${IPV4_ADDRS[@]}"; do
-        echo -e "     • $ip"
-    done
-fi
-
-echo -e " ${YELLOW}➡ Último login:${RESET}          ${LAST_LOGIN:-N/A}"
-echo -e " ${YELLOW}➡ Uptime:${RESET}                $UPTIME"
-echo -e " ${YELLOW}➡ Usuários conectados:${RESET}   $USERS"
-echo -e " ${YELLOW}➡ Memória usada:${RESET}         $MEMORY"
-echo -e " ${YELLOW}➡ Disco raiz:${RESET}            $DISK_ROOT\n"
-
-echo -e " ${YELLOW}➡ Zabbix Agent:${RESET}          $ZABBIX_AGENT_STATUS"
-echo -e " ${YELLOW}➡ Zabbix Proxy:${RESET}          $ZABBIX_PROXY_STATUS\n"
-
-# -------------------------
-# Rodapé
-# -------------------------
-echo -e "${BLUE}################################################################${RESET}"
-echo -e "   ${GREEN}Acesso Concedido.${RESET} ${CYAN}Toda atividade está sendo monitorada.${RESET}"
-echo -e "${BLUE}################################################################${RESET}\n"
-{% endraw %}
+exit 0

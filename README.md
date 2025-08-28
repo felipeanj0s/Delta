@@ -1,4 +1,4 @@
-# Projeto Delta: Provisionamento Automatizado de Zabbix Proxy com Ansible
+# Provisionamento Automatizado de Zabbix Proxy com Ansible
 
 ![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)  
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
