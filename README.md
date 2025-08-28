@@ -1,68 +1,67 @@
-Com certeza. Entendido.
-
-"Atualizar tudo do zero" significa consolidar todas as correções e aprendizados da nossa longa jornada de depuração em uma versão final, limpa e funcional de todos os arquivos importantes do projeto.
-
-Abaixo está a versão final e corrigida de cada arquivo chave. Você pode usar este material como a "versão de ouro" do seu projeto.
-
------
 # Projeto Delta: Provisionamento Automatizado de Zabbix Proxy com Ansible
 
-![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)
+![Ansible Version](https://img.shields.io/badge/ansible--core-2.15%2B-blue.svg)  
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## Descrição
+## 📌 Descrição
 
-Este projeto utiliza Ansible para automatizar a implantação e configuração completa de um Zabbix Proxy em servidores baseados em Debian 12 (Bookworm). A automação foi projetada para ser executada localmente no host de destino e abrange a configuração de rede, hardening de segurança e a instalação dos serviços Zabbix.
+O **Projeto Delta** automatiza, via **Ansible**, a implantação e configuração completa de um **Zabbix Proxy** em servidores **Debian 12 (Bookworm)**.  
+A automação é executada **localmente no host de destino** e inclui:
 
-## Estrutura do Projeto
+- Configuração de rede e hardening de segurança  
+- Instalação e configuração do Zabbix Proxy e Zabbix Agent 2  
+- Registro do proxy no servidor Zabbix (com limitações)  
 
-| Arquivo / Diretório                  | Descrição                                                                                                   |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `prov_zbxproxy.yml`                  | Playbook principal que orquestra a execução de todas as roles na ordem correta.                               |
-| `hosts`                              | Arquivo de inventário que define os hosts de destino e seus grupos (ex: `[ce]`).                                |
-| `group_vars/all.yml`                 | Contém as variáveis globais, aplicadas a todos os hosts no inventário (IP do Zabbix Server, token, etc.).       |
-| `group_vars/pops_configs/`           | Diretório que armazena os arquivos de variáveis específicas para cada localidade (POP).                         |
-| `roles/`                             | Diretório principal que contém todas as roles modulares da automação.                                         |
-| `roles/setup_context/`               | Role responsável por carregar o arquivo de variáveis correto do POP com base no inventário.                    |
-| `roles/net_security/`                | Role que aplica configurações essenciais de rede e segurança (UFW, Fail2Ban, SSH).                             |
-| `roles/zabbix_proxy/`                | Role que instala e configura o serviço do Zabbix Proxy no host.                                               |
-| `roles/zabbix_agent/`                | Role que instala e configura o Zabbix Agent 2 no host.                                                        |
-| `roles/zabbix_server_register_proxy/` | Role que se comunica com a API do Zabbix Server para registrar o proxy.                                       |
+---
 
-## Pré-requisitos
+## 📂 Estrutura do Projeto
 
-As seguintes ferramentas devem estar instaladas no servidor de destino antes da execução:
+| Arquivo / Diretório                   | Descrição                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `prov_zbxproxy.yml`                   | Playbook principal que orquestra todas as roles.                           |
+| `hosts`                               | Inventário Ansible com grupos de hosts (ex.: `[ce]`).                      |
+| `group_vars/all.yml`                  | Variáveis globais (IP do Zabbix Server, URL, token da API, etc.).          |
+| `group_vars/pops_configs/`            | Variáveis específicas por localidade (POP).                                |
+| `roles/`                              | Diretório contendo todas as roles da automação.                            |
+| `roles/setup_context/`                | Carrega variáveis corretas do POP com base no inventário.                  |
+| `roles/net_security/`                 | Configuração de rede e segurança (UFW, Fail2Ban, SSH).                     |
+| `roles/zabbix_proxy/`                 | Instala e configura o serviço Zabbix Proxy.                                |
+| `roles/zabbix_agent/`                 | Instala e configura o Zabbix Agent 2.                                      |
+| `roles/zabbix_server_register_proxy/` | Integração com a API do Zabbix Server para registrar o proxy.              |
 
--   Sistema Operacional: **Debian 12 (Bookworm)**
--   Acesso de um usuário com permissões `sudo`.
--   `git`
--   `python3-pip`
--   `ansible` (recomenda-se a versão mais recente instalada via `pip`)
+---
 
-## Configuração
+## ✅ Pré-requisitos
 
-1.  **Variáveis Globais (`group_vars/all.yml`)**: Ajuste as variáveis que são comuns a todos os ambientes, como `zabbix_server_ip`, `zabbix_server_url` e `zabbix_api_token`.
-2.  **Variáveis de Localidade (`group_vars/pops_configs/`)**: Crie ou edite o arquivo YAML correspondente à sua localidade (ex: `ce.yml`). Preencha as variáveis de rede (`pop_network_interface`, `pop_network_ipv4_address`, `pop_network_ipv4_netmask`, etc.) e o `zabbix_proxy_hostname`.
+No **servidor de destino** devem estar disponíveis:
 
-## Instruções de Uso
+- Debian 12 (Bookworm)  
+- Usuário com permissões `sudo`  
+- `git`  
+- `python3-pip`  
+- `ansible` (recomendado instalar via `pip`)  
 
-A automação foi projetada para ser executada localmente no servidor que será provisionado.
+---
 
-**1. Clone o Repositório**
+## ⚙️ Configuração
 
-Clone o projeto para o servidor de destino.
+1. **Variáveis globais (`group_vars/all.yml`)**  
+   - Ajuste `zabbix_server_ip`, `zabbix_server_url` e `zabbix_api_token`.  
+
+2. **Variáveis por POP (`group_vars/pops_configs/`)**  
+   - Crie/edite o arquivo YAML correspondente (ex.: `ce.yml`);  
+   - Defina os parâmetros de rede (`pop_network_interface`, `pop_network_ipv4_address`, `pop_network_ipv4_netmask`, etc.);  
+   - Configure `zabbix_proxy_hostname`.  
+
+---
+
+## ▶️ Execução
+
+**1. Clone o repositório**
+
 ```bash
-git clone [https://github.com/felipeanj0s/Delta.git](https://github.com/felipeanj0s/Delta.git) 
+git clone https://github.com/felipeanj0s/Delta.git
 cd Delta/
-```
-
-**2. Execute o Playbook**
-
-Use o comando abaixo para iniciar a automação. Lembre-se de substituir `ce` pelo grupo correto do seu host, conforme definido no arquivo `hosts`.
-
-```bash
-ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K
-```
 
 ##### Análise do Comando de Execução
 
