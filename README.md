@@ -24,22 +24,25 @@ Este projeto utiliza Ansible para automatizar a implantação e configuração c
 
 ## Estrutura do Projeto
 
-.
-├── group_vars/
-│   ├── all.yml                       # Variáveis globais
-│   └── pops_configs/
-│       └── ce.yml                    # Variáveis específicas por POP (ex: Ceará)
-│
-├── roles/
-│   ├── net_security/                 # Configuração de rede e segurança
-│   ├── setup_context/                # Carregamento dinâmico de variáveis
-│   ├── zabbix_agent/                 # Instalação e configuração do Agent 2
-│   ├── zabbix_proxy/                 # Instalação e configuração do Proxy
-│   └── zabbix_server_register_proxy/ # Registro na API do Zabbix Server
-│
-├── hosts                             # Arquivo de inventário Ansible
-└── prov_zbxproxy.yml                 # Playbook principal
+group_vars/
 
+all.yml: variáveis globais
+
+pops_configs/: variáveis específicas por POP (ex: ce.yml)
+
+roles/
+
+net_security: configuração de rede e segurança
+
+setup_context: carregamento dinâmico de variáveis
+
+zabbix_agent: instalação/configuração do Agent 2
+
+zabbix_proxy: instalação/configuração do Proxy
+
+zabbix_server_register_proxy: registro via API no Zabbix Server
+
+hosts: inventário do Ansible
 
 ## Pré-requisitos
 
