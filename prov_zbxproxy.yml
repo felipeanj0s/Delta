@@ -8,21 +8,6 @@
   hosts: all
   become: yes
 
-  # --- PRE-TASKS: Verificação e Instalação de Dependências ---
-  pre_tasks:
-    - name: Verificar se a collection community.zabbix está instalada
-      ansible.builtin.command: ansible-galaxy collection list community.zabbix
-      register: zabbix_collection_check
-      changed_when: false
-      failed_when: false # Ignora o erro se a collection não for encontrada
-      connection: local # Roda na máquina que está executando o playbook
-      run_once: true    # Roda apenas uma vez, não para cada host
-
-    - name: Instalar a collection community.zabbix se necessário
-      ansible.builtin.command: ansible-galaxy collection install community.zabbix
-      when: zabbix_collection_check.rc != 0 # Roda apenas se o comando anterior falhou
-      connection: local
-      run_once: true
 
   # --- TASKS: Execução das Roles ---
   tasks:

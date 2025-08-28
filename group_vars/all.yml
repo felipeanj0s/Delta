@@ -4,7 +4,6 @@
 # Arquivo: group_vars/all.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles:
 #             - net_security (roles/net_security)
-#             - pre_checks   (roles/pre_checks)
 #             - zabbix_proxy (roles/zabbix_proxy)
 #             - zabbix_agent (roles/zabbix_agent)
 # Versão: 4.0
@@ -17,10 +16,10 @@
 # ==============================================================================
 # IP do Zabbix Server Central.
 zabbix_server_ip: "192.168.0.208"
+
 # IPs dos servidores Zabbix para checagens ativas.
 zabbix_active_server_ips:
   - "192.168.0.208"
-
 
 # variaveis apenas e somente para zabbix_server_register_proxy
 zabbix_server_url: http://192.168.0.208/zabbix
