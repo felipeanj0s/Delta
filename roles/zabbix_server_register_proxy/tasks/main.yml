@@ -1,35 +1,70 @@
 # ======================================================================
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
-# VERSÃO COM LÓGICA DE PORTA CORRIGIDA
 # ======================================================================
 ---
-- name: Garantir que o Proxy esteja criado e configurado corretamente no Zabbix Server
-  # Definimos as variáveis de conexão aqui, para o plugin httpapi usar
-  vars:
-    # Primeiro, extrai a porta. Se estiver vazia, define 80 ou 443 com base no protocolo.
-    ansible_httpapi_port: "{{ (zabbix_server_url | urlsplit('port')) or (80 if zabbix_server_url.startswith('http://') else 443) }}"
-    
-    ansible_host: "{{ zabbix_server_url | urlsplit('hostname') }}"
-    ansible_httpapi_use_ssl: "{{ zabbix_server_url.startswith('https://') }}"
-    ansible_httpapi_validate_certs: false
-    ansible_zabbix_url_path: "{{ (zabbix_server_url | urlsplit('path')).split('/')[1] | default('zabbix') }}"
-    ansible_zabbix_auth_key: "{{ zabbix_api_token }}"
-    ansible_connection: ansible.netcommon.httpapi
+# Este código cria o proxy sem a interface para contornar a API inconsistente do Zabbix Server.
 
-  
-  community.zabbix.zabbix_proxy:
-    proxy_name: "{{ zabbix_proxy_hostname }}"
+- name: Garantir que o PIP esteja instalado
+  become: yes
+  ansible.builtin.apt:
+    name: python3-pip
     state: present
-    description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-    operating_mode: "{{ 'active' if zabbix_proxy_mode == 0 else 'passive' }}"
-    allowed_addresses: "{{ zabbix_proxy_hostname }}"
-    address: "{{ pop_network_ipv4_address.split('/')[0] }}"
-    port: "{{ zabbix_proxy_listenport | default('10051') | string }}"
-    tls_connect: "{{ 'PSK' if zabbix_proxy_tls_connect == 1 else 'no_encryption' }}"
-    tls_accept: "{{ 'PSK' if zabbix_proxy_tls_accept == 1 else 'no_encryption' }}"
-    tls_psk_identity: "{{ proxy_api_psk_identity }}"
-    tls_psk: "{{ proxy_api_psk_key }}"
+    update_cache: yes
 
-  delegate_to: localhost
-  run_once: true
+- name: Garantir que a biblioteca zabbix-api esteja instalada
+  ansible.builtin.pip:
+    name: zabbix-api
+    state: present
+    extra_args: --break-system-packages
+
+- name: API | Verificar se o Proxy já existe
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.get"
+      params:
+        output: "extend"
+        filter:
+          name: ["{{ zabbix_proxy_hostname }}"]
+      id: 1
+    validate_certs: no
+    follow_redirects: all
+  register: zabbix_proxy_get_response
+  failed_when: "'error' in zabbix_proxy_get_response.json"
+
+- name: API | Criar o Proxy (sem interface) se não existir
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.create"
+      params:
+        name: "{{ zabbix_proxy_hostname }}"
+        description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
+        operating_mode: "{{ zabbix_proxy_mode | default(0) | int }}"
+        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
+        tls_psk_identity: "{{ proxy_api_psk_identity }}"
+        tls_psk: "{{ proxy_api_psk_key }}"
+      id: 1
+    validate_certs: no
+    follow_redirects: all
+  register: zabbix_proxy_create_response
+  failed_when: "'error' in zabbix_proxy_create_response.json"
+  when: (zabbix_proxy_get_response.json.result | default([])) | length == 0
+
+- name: Final | Exibir resultado da operação
+  ansible.builtin.debug:
+    msg: "AVISO: Proxy '{{ zabbix_proxy_hostname }}' criado/verificado com sucesso. A interface (IP) deve ser configurada manualmente na interface web do Zabbix."
