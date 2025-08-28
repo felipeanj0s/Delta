@@ -1,6 +1,7 @@
 # ==============================================================================
 # Template de Configuração de Rede - Debian 12
 # Arquivo: roles/net_security/templates/interfaces.j2
+# VERSÃO CORRIGIDA
 # ==============================================================================
 
 source /etc/network/interfaces.d/*
@@ -14,15 +15,16 @@ auto {{ pop_network_interface }}
 
 # Configuração IPv4
 iface {{ pop_network_interface }} inet static
-  address {{ pop_network_ipv4_address | ipaddr('address') }}
-  netmask {{ pop_network_ipv4_address | ipaddr('netmask') }}
+  # Extrai apenas o IP da variável principal (ex: "192.168.0.17")
+  address {{ pop_network_ipv4_address.split('/')[0] }}
+  # Usa a nova variável para a máscara de rede
+  netmask {{ pop_network_ipv4_netmask }}
   gateway {{ pop_network_ipv4_gateway }}
   dns-nameservers {{ pop_network_dns_list | join(' ') }}
 
 {# --- Configuração IPv6 Condicional --- #}
-{# Este bloco só será adicionado se a variável pop_network_ipv6_address estiver definida, não for vazia e não contiver apenas espaços. #}
-{% if pop_network_ipv6_address and pop_network_ipv6_address.strip() %}
+{% if pop_network_ipv6_address is defined and pop_network_ipv6_address %}
 iface {{ pop_network_interface }} inet6 static
-  address {{ pop_network_ipv6_address | ipaddr('address') }}
+  address {{ pop_network_ipv6_address.split('/')[0] }}
   gateway {{ pop_network_ipv6_gateway }}
 {% endif %}

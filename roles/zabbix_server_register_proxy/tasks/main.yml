@@ -1,137 +1,41 @@
 # ======================================================================
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
-# COMPATÍVEL COM O SEU AMBIENTE (Zabbix 7.2.12)
-# Fluxo:
-# 1) proxy.get                -> verifica se existe
-# 2) proxy.create             -> cria proxy em modo ativo
-# 3) proxy.update             -> TLS e descrição
+# VERSÃO FINAL COM MÓDULO DEDICADO community.zabbix
 # ======================================================================
 ---
+- name: Garantir que o Proxy esteja criado e configurado corretamente no Zabbix Server
+  community.zabbix.zabbix_proxy:
+    # --- Parâmetros de Conexão com a API ---
+    server_url: "{{ zabbix_server_url }}"
+    login_user: "Admin" # O nome de um usuário com permissões de Super Admin
+    api_token: "{{ zabbix_api_token }}"
+    validate_certs: false # Necessário se seu Zabbix usa HTTPS com cert auto-assinado
 
-# ----------------------------------------------------------------------
-# Dependências
-# ----------------------------------------------------------------------
-- name: Garantir que o PIP esteja instalado
-  become: yes
-  ansible.builtin.apt:
-    name: python3-pip
-    state: present
-    update_cache: yes
+    # --- Configuração do Proxy ---
+    proxy_name: "{{ zabbix_proxy_hostname }}"
+    state: present # Garante que o proxy exista. Se não existir, cria. Se existir, atualiza.
+    description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
 
-- name: Garantir que a biblioteca zabbix-api esteja instalada
-  ansible.builtin.pip:
-    name: zabbix-api
-    state: present
-    extra_args: --break-system-packages
+    # --- Modo de Operação ---
+    # O módulo espera 'active' ou 'passive', então convertemos 0 para 'active'
+    operating_mode: "{{ 'active' if zabbix_proxy_mode == 0 else 'passive' }}"
+    # Para proxies ativos, 'allowed_addresses' é o novo parâmetro
+    allowed_addresses: "{{ zabbix_proxy_hostname }}"
 
-# ----------------------------------------------------------------------
-# Passo 1: Verificar se o Proxy já existe
-# ----------------------------------------------------------------------
-- name: API | Verificar se o Proxy já existe no Zabbix Server
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "proxy.get"
-      params:
-        output: ["proxyid", "name"]
-        filter:
-          name: ["{{ zabbix_proxy_hostname }}"]
-      id: 1
-    validate_certs: no
-    follow_redirects: all
-  register: zabbix_proxy_get_response
-  failed_when: "'error' in zabbix_proxy_get_response.json"
+    # --- Configuração da Interface (para proxies passivos) ---
+    # O módulo lida com a lógica de criar a interface. Usamos o novo parâmetro 'address'.
+    address: "{{ pop_network_ipv4_address.split('/')[0] }}"
+    port: "{{ zabbix_proxy_listenport | default('10051') | string }}"
 
-- name: Fatos | Definir se existe e o ID
-  ansible.builtin.set_fact:
-    proxy_exists: "{{ (zabbix_proxy_get_response.json.result | default([])) | length > 0 }}"
-    existing_proxy_id: "{{ (zabbix_proxy_get_response.json.result | default([]) | first).proxyid | default(omit) }}"
+    # --- Configuração de Criptografia (TLS com PSK) ---
+    # O módulo espera 'PSK', então convertemos 1 para 'PSK'
+    tls_connect: "{{ 'PSK' if zabbix_proxy_tls_connect == 1 else 'no_encryption' }}"
+    tls_accept: "{{ 'PSK' if zabbix_proxy_tls_accept == 1 else 'no_encryption' }}"
+    tls_psk_identity: "{{ proxy_api_psk_identity }}"
+    tls_psk: "{{ proxy_api_psk_key }}"
 
-# ----------------------------------------------------------------------
-# Passo 2: Criar o Proxy (modo ativo) se não existir
-# ----------------------------------------------------------------------
-- name: API | Criar o Proxy (modo ativo) se não existir
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "proxy.create"
-      params:
-        name: "{{ zabbix_proxy_hostname }}"
-        description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: 0   # 0 = ativo
-        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
-        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
-        tls_psk_identity: "{{ proxy_api_psk_identity }}"
-        tls_psk: "{{ proxy_api_psk_key }}"
-        interface:
-          ip: "{{ pop_network_ipv4_address | split('/') | first }}"
-          dns: ""
-          useip: 1
-          port: "{{ zabbix_proxy_listenport }}"
-      id: 1
-    validate_certs: no
-    follow_redirects: all
-  register: zabbix_proxy_create_response
-  failed_when: "'error' in zabbix_proxy_create_response.json"
-  when: not proxy_exists
-
-- name: Fatos | Definir ID do proxy recém-criado
-  ansible.builtin.set_fact:
-    new_proxy_id: "{{ zabbix_proxy_create_response.json.result.proxyids[0] }}"
-  when: not proxy_exists
-
-- name: Fatos | Definir proxy_id_final
-  ansible.builtin.set_fact:
-    proxy_id_final: "{{ (not proxy_exists) | ternary(new_proxy_id, existing_proxy_id) }}"
-
-# ----------------------------------------------------------------------
-# Passo 3: Atualizar TLS e descrição do Proxy
-# ----------------------------------------------------------------------
-- name: API | Atualizar TLS/descrição do Proxy
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "proxy.update"
-      params:
-        proxyid: "{{ proxy_id_final }}"
-        description: "Proxy {{ zabbix_proxy_hostname }} gerenciado via Ansible"
-        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
-        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
-        tls_psk_identity: "{{ proxy_api_psk_identity }}"
-        tls_psk: "{{ proxy_api_psk_key }}"
-      id: 1
-    validate_certs: no
-    follow_redirects: all
-  register: zabbix_proxy_update_tls_response
-  failed_when: "'error' in zabbix_proxy_update_tls_response.json"
-
-# ----------------------------------------------------------------------
-# Debug final
-# ----------------------------------------------------------------------
-- name: Debug | Resultado
-  ansible.builtin.debug:
-    msg:
-      - "Proxy ID final: {{ proxy_id_final }}"
-      - "Proxy já existia? {{ proxy_exists }}"
-      - "Proxy GET: {{ zabbix_proxy_get_response.json }}"
-      - "Proxy CREATE: {{ zabbix_proxy_create_response.json | default('N/A') }}"
-      - "Proxy UPDATE TLS/descr: {{ zabbix_proxy_update_tls_response.json }}"
+  # --- Delegação de Tarefa ---
+  # O módulo precisa rodar no nó de controle Ansible, não no host do proxy.
+  delegate_to: localhost
+  run_once: true

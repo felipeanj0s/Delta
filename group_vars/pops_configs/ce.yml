@@ -17,6 +17,7 @@ zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 # Os dados abaixo são do PoP-CE
 pop_network_interface: "enX2"
 pop_network_ipv4_address: "192.168.0.17/24"
+pop_network_ipv4_netmask: "255.255.255.0"
 pop_network_ipv6_address: ""
 pop_network_ipv4_gateway: "192.168.0.9"
 pop_network_ipv6_gateway: ""
