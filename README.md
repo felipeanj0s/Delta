@@ -61,7 +61,7 @@ cd Delta/
 Use o comando abaixo para iniciar a automação. Lembre-se de substituir `ce` pelo grupo correto do seu host, conforme definido no arquivo `hosts`.
 
 ```bash
-ansible-playbook -i hosts prov_zbxproxy.yml --limit ce --ask-become-pass
+ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K
 ```
 
 ##### Análise do Comando de Execução
@@ -84,6 +84,6 @@ A tabela abaixo detalha cada parâmetro do comando:
 
 ## Autor
 
-  - **Felipe Anjos**
+  - **GT Monitoramento**
 
 <!-- end list -->
