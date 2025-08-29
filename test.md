@@ -27,16 +27,13 @@ A automação acontece inteiramente dentro do Host de Destino. Um operador acess
 
 ```mermaid
 graph TD;
-    subgraph Host de Destino (Servidor do Proxy)
+    subgraph HostDestino["Host de Destino (Servidor do Proxy)"]
         A(1. git clone & cd);
         B(2. ansible-playbook ...);
         C{Configuração Local<br>Rede, Segurança, Zabbix};
         A --> B --> C;
     end
     B -- Chamadas de API --> D[Zabbix Server];
-
-```
-
 ## 📜 Entendendo as Roles
 
 A lógica da automação é modularizada em roles, cada uma com uma responsabilidade clara:
