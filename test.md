@@ -20,17 +20,17 @@ A automação acontece inteiramente dentro do Host de Destino. Um operador acess
 
 ```mermaid
 graph LR;
-    Operador -- 1. Acessa via SSH --> HostDestino;
+    Operador -- 1. Provisiona e acessa a VM com Debian 12 --> HostDestino;
 
-    subgraph HostDestino["Host de Destino (Servidor do Proxy)"]
-        A("2. git clone & cd");
-        B("3. ansible-playbook ...");
+    subgraph HostDestino["Máquina Virtual do PoP"]
+        A("2. git clone & cd dev-zbx");
+        B("3. ansible-playbook prov_zbxproxy.yml --limit ce -K ");
         C{"4. Configuração Aplicada<br>Rede, Segurança, Zabbix"};
         
         A --> B --> C;
     end
     
-    B -- Chamadas de API --> ZabbixServer[Zabbix Server];
+    B -- Chamadas de API --> ZabbixAgent&Proxy[Zabbix Agent & Zabbix Proxy Local]--> ZabbixServer[Zabbix Server Central];
 ```
 
 ## 📜 Entendendo as Roles
