@@ -1,0 +1,163 @@
+# ======================================================================
+# GT Monitoramento 2025
+# Arquivo: roles/zabbix_server_register_agent/tasks/main.yml
+# Descrição: Cria ou atualiza o host para o Zabbix Agent 2 via API.
+# ======================================================================
+---
+# --- Passo 1: Obter a chave PSK do host remoto ---
+- name: "Registro do Agente | Ler a chave PSK do arquivo no host remoto"
+  ansible.builtin.slurp:
+    src: "{{ zabbix_agent_psk_file }}"
+  register: agent_psk_file_content
+
+- name: "Registro do Agente | Definir fato com o valor da chave PSK"
+  ansible.builtin.set_fact:
+    agent_psk_key: "{{ agent_psk_file_content.content | b64decode }}"
+
+# --- Passo 2: Obter IDs necessários para criar o host ---
+# Todas as tarefas de API são delegadas para o localhost (controlador Ansible)
+- name: "API | Obter ID do Proxy que irá monitorar o agente"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.get"
+      params:
+        filter:
+          host: ["{{ zabbix_proxy_hostname }}"]
+      auth: "{{ zabbix_api_token }}"
+      id: 1
+  delegate_to: localhost
+  run_once: true
+  register: proxy_get_response
+
+- name: "API | Obter IDs dos Grupos de Hosts"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "hostgroup.get"
+      params:
+        filter:
+          name: "{{ zabbix_agent_hostgroups }}"
+      auth: "{{ zabbix_api_token }}"
+      id: 2
+  delegate_to: localhost
+  run_once: true
+  register: hostgroup_get_response
+
+- name: "API | Obter IDs dos Templates"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "template.get"
+      params:
+        filter:
+          host: "{{ zabbix_agent_templates }}"
+      auth: "{{ zabbix_api_token }}"
+      id: 3
+  delegate_to: localhost
+  run_once: true
+  register: template_get_response
+
+# --- Passo 3: Verificar se o host do Agente já existe ---
+- name: "API | Verificar se o Host do Agente já existe"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "host.get"
+      params:
+        output: "extend"
+        selectInterfaces: "extend"
+        filter:
+          host: ["{{ zabbix_agent_hostname }}"]
+      auth: "{{ zabbix_api_token }}"
+      id: 4
+  delegate_to: localhost
+  run_once: true
+  register: host_get_response
+  failed_when: "'error' in host_get_response.json"
+
+# --- Passo 4: Criar ou Atualizar o Host ---
+- name: "API | Criar o Host do Agente (se não existir)"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "host.create"
+      params:
+        host: "{{ zabbix_agent_hostname }}"
+        proxy_hostid: "{{ proxy_get_response.json.result[0].proxyid }}"
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 1
+            ip: "{{ zabbix_agent_source_ip }}"
+            dns: ""
+            port: "10050"
+        groups: "{{ hostgroup_get_response.json.result | map(attribute='groupid') | map('community.general.dict_kv', 'groupid') | list }}"
+        templates: "{{ template_get_response.json.result | map(attribute='templateid') | map('community.general.dict_kv', 'templateid') | list }}"
+        tls_connect: 2
+        tls_accept: 2
+        tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
+        tls_psk: "{{ agent_psk_key }}"
+      auth: "{{ zabbix_api_token }}"
+      id: 5
+  delegate_to: localhost
+  run_once: true
+  when: (host_get_response.json.result | default([])) | length == 0
+  register: host_create_response
+  failed_when: "'error' in host_create_response.json"
+
+- name: "API | Atualizar o Host do Agente (se já existir)"
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "host.update"
+      params:
+        hostid: "{{ host_get_response.json.result[0].hostid }}"
+        proxy_hostid: "{{ proxy_get_response.json.result[0].proxyid }}"
+        groups: "{{ hostgroup_get_response.json.result | map(attribute='groupid') | map('community.general.dict_kv', 'groupid') | list }}"
+        templates: "{{ template_get_response.json.result | map(attribute='templateid') | map('community.general.dict_kv', 'templateid') | list }}"
+        tls_connect: 2
+        tls_accept: 2
+        tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
+        tls_psk: "{{ agent_psk_key }}"
+      auth: "{{ zabbix_api_token }}"
+      id: 6
+  delegate_to: localhost
+  run_once: true
+  when: (host_get_response.json.result | default([])) | length > 0
+  register: host_update_response
+  failed_when: "'error' in host_update_response.json"
+
+- name: "Final | Exibir resultado da operação do Agente"
+  ansible.builtin.debug:
+    msg: "SUCESSO: Host '{{ zabbix_agent_hostname }}' criado/atualizado com sucesso no Zabbix Server."

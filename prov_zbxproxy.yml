@@ -1,13 +1,8 @@
-# ============================================================================================================================
-# Provisionamento do Projeto - POP-CE
 # Arquivo: prov_zbxproxy.yml
-# Descrição: Este arquivo é responsável por provisionar a instalação do Zabbix Proxy, Zabbix Agent e suas configurações.
-# ============================================================================================================================
 ---
 - name: Configurar Zabbix Proxy e Agent
   hosts: all
   become: yes
-
 
   # --- TASKS: Execução das Roles ---
   tasks:
@@ -30,3 +25,7 @@
     - name: Executar role zabbix_server_register_proxy
       include_role:
         name: zabbix_server_register_proxy
+
+    - name: Executar role zabbix_server_register_agent
+      include_role:
+        name: zabbix_server_register_agent

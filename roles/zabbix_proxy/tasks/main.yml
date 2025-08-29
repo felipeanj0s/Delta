@@ -1,6 +1,6 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Tasks da Role 'zabbix_proxy' (Versão Final Otimizada)
+# Tasks da Role 'zabbix_proxy' (Versão Refinada)
 # Arquivo: roles/zabbix_proxy/tasks/main.yml
 # ==============================================================================
 ---
@@ -45,46 +45,40 @@
     - "{{ zabbix_proxy_psk_file | dirname }}"
 
 # ==============================================================================
-# --- Gestão da Chave PSK ---
+# --- Gestão da Chave PSK (Lógica Refinada) ---
 # ==============================================================================
 - name: PSK | Verificar status do arquivo
   ansible.builtin.stat:
     path: "{{ zabbix_proxy_psk_file }}"
   register: proxy_psk_file_status
-  changed_when: false
 
-- name: PSK | Gerar nova chave (se necessário)
-  ansible.builtin.command: openssl rand -hex 32
-  register: proxy_psk_value_raw
+- name: PSK | Gerar e salvar nova chave (somente se o arquivo não existir)
+  block:
+    - name: PSK | Gerar nova chave em memória
+      ansible.builtin.command: openssl rand -hex 32
+      register: proxy_psk_value_raw
+      changed_when: true
+
+    - name: PSK | Criar arquivo com a nova chave
+      ansible.builtin.copy:
+        content: "{{ proxy_psk_value_raw.stdout }}"
+        dest: "{{ zabbix_proxy_psk_file }}"
+        owner: zabbix
+        group: zabbix
+        mode: '0600'
   when: not proxy_psk_file_status.stat.exists
-  changed_when: true
 
-- name: PSK | Ler chave existente do arquivo (se necessário)
+- name: PSK | Ler a chave do arquivo (agora garantido que existe)
   ansible.builtin.slurp:
     src: "{{ zabbix_proxy_psk_file }}"
   register: proxy_psk_file_content
-  when: proxy_psk_file_status.stat.exists
   changed_when: false
 
 - name: Fatos | Definir identidade e chave PSK para uso em outras roles
   ansible.builtin.set_fact:
     proxy_api_psk_identity: "{{ zabbix_proxy_psk_identity }}"
-    proxy_api_psk_key: >-
-      {{ (proxy_psk_file_status.stat.exists | default(false))
-         | ternary(
-             (proxy_psk_file_content.content | default('') | b64decode | trim),
-             (proxy_psk_value_raw.stdout | default(''))
-           ) }}
-    cacheable: yes   
-- name: PSK | Criar arquivo com a nova chave (se necessário)
-  ansible.builtin.copy:
-    content: "{{ proxy_api_psk_key }}"
-    dest: "{{ zabbix_proxy_psk_file }}"
-    owner: zabbix
-    group: zabbix
-    mode: '0600'
-  when: not proxy_psk_file_status.stat.exists
-
+    proxy_api_psk_key: "{{ proxy_psk_file_content.content | b64decode | trim }}"
+    cacheable: yes
 
 # ==============================================================================
 # --- Configuração e Gestão do Serviço ---

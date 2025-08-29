@@ -282,3 +282,16 @@ ufw_rules:
     proto: tcp
     comment: "Zabbix Proxy - Active Servers"
     direction: in
+# Arquivo: group_vars/all.yml
+
+# ==============================================================================
+# Seção VI: Configurações de Registro de Host na API
+# ==============================================================================
+# Grupos de hosts para associar o Agent no Zabbix Server.
+zabbix_agent_hostgroups:
+  - "Linux servers"
+  - "Zabbix proxies"
+
+# Templates para associar ao Agent no Zabbix Server.
+zabbix_agent_templates:
+  - "Linux by Zabbix agent"
