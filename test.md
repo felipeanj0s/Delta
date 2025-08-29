@@ -19,14 +19,18 @@ Este projeto automatiza, via **Ansible**, a implantação e configuração compl
 A automação acontece inteiramente dentro do Host de Destino. Um operador acessa o servidor, clona este repositório e executa o playbook, que então configura a máquina localmente. A única comunicação externa é com a API do Zabbix Server.
 
 ```mermaid
-graph TD;
+graph LR;
+    Operador -- 1. Acessa via SSH --> HostDestino;
+
     subgraph HostDestino["Host de Destino (Servidor do Proxy)"]
-        A(1. git clone & cd);
-        B(2. ansible-playbook ...);
-        C{Configuração Local<br>Rede, Segurança, Zabbix};
+        A("2. git clone & cd");
+        B("3. ansible-playbook ...");
+        C{"4. Configuração Aplicada<br>Rede, Segurança, Zabbix"};
+        
         A --> B --> C;
     end
-    B -- Chamadas de API --> D[Zabbix Server];
+    
+    B -- Chamadas de API --> ZabbixServer[Zabbix Server];
 ```
 
 ## 📜 Entendendo as Roles
