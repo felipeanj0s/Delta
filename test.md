@@ -26,7 +26,7 @@ graph LR;
         A("2. git clone & cd dev-zbx");
         B("3. ansible-playbook prov_zbxproxy.yml --limit ce -K");
         C{"4. Configuração Aplicada<br>Rede, Segurança, Zabbix"};
-        D {"5.Zabbix Agent & Zabbix Proxy"};
+        D("5.Zabbix Agent & Zabbix Proxy");
         A --> B --> C --> D;
     end
     
