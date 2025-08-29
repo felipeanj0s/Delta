@@ -30,7 +30,7 @@ graph LR;
         A --> B --> C;
     end
     
-    B -- "Executa a configuração e registro via API" --> C -- "Inicia Comunicação Contínua" --> ZabbixServer["Zabbix Server Central"];
+    C -- "Executa a configuração e registro via API" --> ZabbixServer["Zabbix Server Central"];
 ```
 
 ## 📜 Entendendo as Roles
