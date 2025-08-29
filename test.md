@@ -32,7 +32,7 @@ graph LR;
     
     C --> ZbxProxy&Agent["Zabbix Agent & Zabbix Proxy"] --> 
     
-    subgraph HostDestino["Zabbix Server Central"] 
+    subgraph Hostzbxserver["Zabbix Server Central"] 
     end
 ```
 
