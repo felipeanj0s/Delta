@@ -30,7 +30,7 @@ graph LR;
         A --> B --> C --> D;
     end
     
-    D --> ZabbixServer["Zabbix Server Central"] 
+    D --> ZabbixServer{"Zabbix Server Central"} 
     
 ```
 
