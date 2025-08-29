@@ -30,7 +30,7 @@ graph LR;
         A --> B --> C;
     end
     
-    C -- "Executa a configuração e registro via API" --> ZabbixServer["Zabbix Server Central"];
+    C -- ZbxProxy&Agent["Zabbix Agent & Zabbix Proxy"] --> ZabbixServer["Zabbix Server Central"];
 ```
 
 ## 📜 Entendendo as Roles
