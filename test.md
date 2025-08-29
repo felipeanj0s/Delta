@@ -1,10 +1,3 @@
-Com certeza. Entendi perfeitamente. Você quer que a documentação seja um reflexo fiel da qualidade do código: completa, clara e que explique não apenas "o quê", mas também "o porquê".
-
-Preparei a versão definitiva do seu `README.md`. Ela incorpora a explicação sobre a dependência `community.general` e adiciona novas seções que elevam a documentação a um nível profissional, incluindo um detalhamento de cada role, uma seção de segurança sobre o Ansible Vault e um guia de solução de problemas.
-
-Este é o resultado final, pensado para ser a documentação central e completa do seu projeto.
-
------
 
 # Provisionamento Automatizado de Zabbix Proxy com Ansible
 
@@ -34,6 +27,8 @@ graph TD;
         A --> B --> C;
     end
     B -- Chamadas de API --> D[Zabbix Server];
+```
+
 ## 📜 Entendendo as Roles
 
 A lógica da automação é modularizada em roles, cada uma com uma responsabilidade clara:
@@ -101,22 +96,6 @@ ansible-playbook prov_zbxproxy.yml --limit ce -K
 
 -----
 
-## 🔒 Segurança: Gerenciando Segredos
-
-O arquivo `group_vars/all.yml` contém o `zabbix_api_token` em texto plano. Para ambientes de produção, é **altamente recomendado** usar o **Ansible Vault** para criptografar esta informação.
-
-1.  **Crie um arquivo criptografado:**
-    ```bash
-    ansible-vault create group_vars/secrets.yml
-    ```
-2.  **Mova o `zabbix_api_token`** de `all.yml` para `secrets.yml`.
-3.  **Execute o playbook** solicitando a senha do Vault:
-    ```bash
-    ansible-playbook prov_zbxproxy.yml --limit ce -K --ask-vault-pass
-    ```
-
------
-
 ## 🤔 Solução de Problemas (Troubleshooting)
 
   - **Falha na tarefa "Carregar variáveis específicas da localidade"**:
@@ -125,13 +104,12 @@ O arquivo `group_vars/all.yml` contém o `zabbix_api_token` em texto plano. Para
 
   - **As tarefas de API falham com erro de autenticação**:
 
-      - Verifique se o `zabbix_api_token` em `group_vars/all.yml` (ou `secrets.yml`) está correto e se tem as permissões necessárias no Zabbix.
+      - Verifique se o `zabbix_api_token` em `group_vars/all.yml` está correto e se tem as permissões necessárias no Zabbix.
       - Confirme se a `zabbix_server_url` está acessível a partir do servidor onde o playbook está sendo executado.
 
-  - **Falha de conexão SSH (se não estiver usando `connection=local`)**:
+  - **Playbook falha com erro "variável não definida"**:
 
-      - Garanta que sua chave SSH está autorizada no host de destino e que o usuário está correto no inventário.
-      - Verifique se não há um firewall bloqueando a porta SSH.
+      - Confirme se todas as variáveis necessárias estão definidas em `group_vars/all.yml` e no arquivo de POP específico (`group_vars/pops_configs/<sigla>.yml`).
 
 -----
 
