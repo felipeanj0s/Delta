@@ -26,11 +26,11 @@ graph LR;
         A("2. git clone & cd dev-zbx");
         B("3. ansible-playbook prov_zbxproxy.yml --limit ce -K");
         C{"4. Configuração Aplicada<br>Rede, Segurança, Zabbix"};
-        
-        A --> B --> C;
+        D {"5.Zabbix Agent & Zabbix Proxy"};
+        A --> B --> C --> D;
     end
     
-    C --> ZbxProxy&Agent["Zabbix Agent & Zabbix Proxy"] --> ZabbixServer["Zabbix Server Central"] 
+    D --> ZabbixServer["Zabbix Server Central"] 
     
 ```
 
