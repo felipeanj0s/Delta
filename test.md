@@ -30,7 +30,10 @@ graph LR;
         A --> B --> C;
     end
     
-    C --> ZbxProxy&Agent["Zabbix Agent & Zabbix Proxy"] --> ZabbixServer["Zabbix Server Central"];
+    C --> ZbxProxy&Agent["Zabbix Agent & Zabbix Proxy"] --> 
+    
+    subgraph HostDestino["Zabbix Server Central"] 
+    end
 ```
 
 ## 📜 Entendendo as Roles
