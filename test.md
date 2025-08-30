@@ -20,7 +20,7 @@ A automação acontece inteiramente dentro do Host de Destino. Um operador acess
 
 ```mermaid
 graph LR;
-    Operador --> ("1. Provisiona e acessa a VM com Debian 12"); --> HostDestino;
+    Operador --"1. Provisiona e acessa a VM com Debian 12" --> HostDestino;
 
     subgraph HostDestino["Máquina Virtual do PoP"]
         A("2. git clone & cd dev-zbx");
