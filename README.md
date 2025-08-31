@@ -5,7 +5,7 @@
 
 ## 📜 Sumário
 
-  - [Visão Geral](https://www.google.com/search?q=%23-vis%C3%A3o-geral)
+  - [Visão Geral](# 📖 Visão Geral)
   - [Funcionalidades](https://www.google.com/search?q=%23-principais-funcionalidades)
   - [Arquitetura de Execução](https://www.google.com/search?q=%23%EF%B8%8F-arquitetura-de-execu%C3%A7%C3%A3o)
   - [Estrutura das Roles](https://www.google.com/search?q=%23-estrutura-das-roles)
@@ -44,20 +44,26 @@ A automação acontece inteiramente no Host de Destino. Um operador acessa o ser
 ```mermaid
 graph TD;
     subgraph "Ambiente Externo"
-        Operador(["👤<br>Operador"]);
         ZabbixServer(["🏢<br>Zabbix Server Central"]);
     end
 
-    subgraph "Host de Destino (VM no PoP)"
-        A("1. git clone & cd");
-        B("2. ansible-playbook prov_zbxproxy.yml");
-        C{"3. Roles aplicam configurações<br>Rede, Segurança, Zabbix"};
-        D["✅<br>Proxy e Agent<br>Instalados e Rodando"];
-        
-        A --> B --> C --> D;
+    subgraph "Ambiente do PoP"
+        direction LR
+        Operador(["👤<br>Operador"]);
+
+        subgraph "VM Host de Destino"
+            direction TD
+            A("1. git clone & cd");
+            B("2. ansible-playbook prov_zbxproxy.yml");
+            C{"3. Roles aplicam configurações<br>Rede, Segurança, Zabbix"};
+            D["✅<br>Proxy e Agent<br>Instalados e Rodando"];
+            
+            A --> B --> C --> D;
+        end
+
+        Operador -- "Acessa via SSH" --> A;
     end
     
-    Operador -- "Acessa via SSH" --> A;
     D -- "Comunicação TLS/PSK<br>(Portas 10051 e 10050)" --> ZabbixServer;
 ```
 
