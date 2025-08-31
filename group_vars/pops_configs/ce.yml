@@ -21,7 +21,7 @@ zabbix_agent_hostgroups:
 # --- Informações de rede do PoP-CE. Usadas para configurar a interface de rede ---
 # ==============================================================================
 # Os dados abaixo são do PoP-CE
-pop_network_interface: "enX2"
+pop_network_interface: "enX1"
 pop_network_ipv4_address: "192.168.0.17/24"
 pop_network_ipv4_netmask: "255.255.255.0"
 pop_network_ipv6_address: ""
