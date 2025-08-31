@@ -50,7 +50,7 @@ graph TD;
     subgraph "Ambiente do PoP"
         Operador(["👤<br>Operador do PoP"]);
 
-        subgraph "VM Host de Destino"
+        subgraph "VM Host LOCAL"
             A("1. git clone & cd");
             B("2. ansible-playbook prov_zbxproxy.yml");
             C{"3. Roles aplicam configurações de <br>Rede, Segurança, Zabbix Proxy e Agent2"};
