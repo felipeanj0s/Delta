@@ -1,80 +1,42 @@
 ---
-# ======================================================================
+# ==============================================================================
 # Handlers da Role 'network_security'
-# ======================================================================
+# Arquivo: roles/net_security/handlers/main.yml
+# ==============================================================================
 
-# Aplica a configuração de rede de forma robusta:
-# 1) ifupdown2 -> ifreload -a
-# 2) ifupdown  -> ifdown/ifup da interface alvo
-# 3) fallback  -> systemctl restart networking
+# --- Reiniciar serviço de rede (Debian ifupdown) ---
+# Tenta via módulo systemd; se falhar, executa systemctl diretamente.
 - name: Reiniciar Networking
-  become: yes
   block:
-    - name: Verificar se ifreload (ifupdown2) está disponível
-      ansible.builtin.stat:
-        path: /sbin/ifreload
-      register: ifreload_bin
-
-    - name: Aplicar rede com ifupdown2 (ifreload -a)
-      ansible.builtin.command: /sbin/ifreload -a
-      when: ifreload_bin.stat.exists
-      changed_when: true
-
-    - name: Verificar se ifup/ifdown clássicos existem (fallback)
-      ansible.builtin.stat:
-        path: /sbin/ifup
-      register: ifup_bin
-      when: not ifreload_bin.stat.exists
-
-    - name: Down/Up somente da interface alvo (fallback ifupdown)
-      ansible.builtin.shell: |
-        set -e
-        if ip link show "{{ pop_network_interface }}" >/dev/null 2>&1; then
-          ifdown --force "{{ pop_network_interface }}" || true
-          ifup "{{ pop_network_interface }}"
-        fi
-      args:
-        executable: /bin/bash
-      when:
-        - not ifreload_bin.stat.exists
-        - ifup_bin.stat.exists
-      changed_when: true
-
-    - name: Fallback final: systemctl restart networking
+    - name: Networking | restart via systemd
       ansible.builtin.systemd:
         name: networking
         state: restarted
-      when:
-        - not ifreload_bin.stat.exists
-        - not ifup_bin.stat.exists
-
-    # Aguarda a interface voltar com o IP certo (evita pegar log sem IP)
-    - name: Aguardar interface ter o IPv4 configurado
-      ansible.builtin.wait_for:
-        timeout: 20
-      when: pop_network_ipv4_address is defined and pop_network_ipv4_address|length > 0
-
+      register: _net_restart
+      failed_when: false
+      changed_when: _net_restart is changed
   rescue:
-    - name: Aviso | Falha ao aplicar rede
-      ansible.builtin.debug:
-        msg: "Falha ao reconfigurar rede (ifreload/ifdown+ifup/restart networking). Verifique logs e conectividade."
+    - name: Fallback final: systemctl restart networking
+      ansible.builtin.command: systemctl restart networking
+      register: _net_restart_cmd
+      changed_when: true
+      failed_when: _net_restart_cmd.rc != 0
 
-# Reiniciar Fail2Ban
+# --- Reiniciar serviço Fail2Ban ---
 - name: Reiniciar Fail2Ban
-  become: yes
   ansible.builtin.systemd:
     name: fail2ban
     state: restarted
-    enabled: yes
+    enabled: true
 
-# Reiniciar SSH
+# --- Reiniciar serviço SSH ---
 - name: Reiniciar SSH
-  become: yes
   ansible.builtin.systemd:
     name: sshd
     state: restarted
-    enabled: yes
+    enabled: true
 
-# Atualizar MOTD
+# --- Atualizar MOTD ---
 - name: Atualizar MOTD
   ansible.builtin.command: /usr/bin/run-parts --regex '^[0-9]+-.*' /etc/update-motd.d/
+  changed_when: false

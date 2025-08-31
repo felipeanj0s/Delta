@@ -1,8 +1,3 @@
-# ==============================================================================
-# Template de Configuração do Zabbix Agent 2
-# Arquivo: roles/zabbix_agent/templates/zabbix_agent2.conf.j2
-# ==============================================================================
-
 ### GENERAL
 PidFile={{ zabbix_agent_pidfile }}
 LogFile={{ zabbix_agent_logfile }}
@@ -13,7 +8,8 @@ SourceIP={{ zabbix_agent_source_ip }}
 
 ### PASSIVE CHECKS
 ListenPort={{ zabbix_agent_listenport }}
-Server={{ zabbix_agent_server }}
+# Permite o Server e também 127.0.0.1 para testes locais
+Server={{ ([zabbix_server_ip, '127.0.0.1'] | unique) | join(',') }}
 
 ### ACTIVE CHECKS
 ServerActive={{ zabbix_agent_serveractive_list | join(',') }}
