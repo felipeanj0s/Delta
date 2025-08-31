@@ -248,6 +248,6 @@ utilize um SBGD diferente, o banco de dados precisa ser criado manualmente.
 
 ## Créditos
 
-Criado por **GT Monitoramento 2025**.
+ **GT Monitoramento 2025**
 ---
 
