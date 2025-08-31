@@ -28,6 +28,30 @@ Automação completa para instalar, configurar e registrar um **Zabbix Proxy** (
 * Integra **automaticamente** no Zabbix Server via **API** para registrar **Proxy** e **Host do Agent**.
 * Execução **idempotente** e **local** (no próprio servidor de destino). ([GitHub][1])
 
+```mermaid
+graph TD;
+    subgraph "Ambiente Externo"
+        ZabbixServer(["🏢<br>Zabbix Server Central"]);
+    end
+
+    subgraph "Ambiente do PoP"
+        Operador(["👤<br>Operador do PoP"]);
+
+        subgraph "VM Host LOCAL"
+            A("1. git clone & cd");
+            B("2. ansible-playbook prov_zbxproxy.yml");
+            C{"3. Roles aplicam configurações de <br>Rede, Segurança, Zabbix Proxy e Agent2"};
+            D["✅<br>Proxy e Agent<br>Instalados e Rodando"];
+            
+            A --> B --> C --> D;
+        end
+
+        Operador -- "Acessa a VM via SSH" --> A;
+    end
+    
+    D -- "Comunicação TLS/PSK" --> ZabbixServer;
+```
+
 ---
 
 ## Arquitetura (alto nível)
@@ -40,7 +64,7 @@ Automação completa para instalar, configurar e registrar um **Zabbix Proxy** (
 ## Estrutura do Repositório
 
 ```
-Delta/
+dev-zbx/
 ├─ prov_zbxproxy.yml          # Play principal
 ├─ hosts                      # Inventário Ansible (grupos por POP)
 ├─ group_vars/
@@ -155,7 +179,7 @@ Parâmetros úteis:
 | Host do Agent “Desconhecido” | Checar configuração na UI           | O host do **Agent 2** do proxy deve ser monitorado pelo **Server** (não pelo proxy) |
 
 > Após o provisionamento, valide na UI do Zabbix:
-> **Administração → Proxies** (ativo, PSK, online, “última vez visto” recente) e **Monitoramento → Hosts** (ZBX verde para o host). ([GitHub][1])
+> **Administração → Proxies** (ativo, PSK, online, “última vez visto” recente) e **Monitoramento → Hosts** (ZBX verde para o host). 
 
 ---
 
