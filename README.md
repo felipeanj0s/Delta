@@ -10,6 +10,7 @@
   - [Pré-requisitos](#pre-requisitos)
   - [Workflow de Provisionamento](#workflow-de-provisionamento)
 - [Configuração Detalhada](#configuracao-detalhada)
+- [Resultados Esperados](#-resultados-esperados)
 - [Solução de Problemas](#solucao-de-problemas)
 - [Limitações e Observações](#limitacoes-e-observacoes)
 - [Autores](#autores)
@@ -141,6 +142,10 @@ Guia rápido do -v para debug:
 | `-vvv` | Verbosidade extra para debug. |
 | `-vvvv` | Debug Maximo |
 
+Ex:
+   ```bash
+   ansible-playbook -i hosts prov_zbxproxy.yml --limit sigla_do_estado -K -v
+   ```
 ---
 
 <a id="configuracao-detalhada"></a>
@@ -188,7 +193,45 @@ As variáveis essenciais a serem configuradas são:
 
   - **🧱 Firewall (UFW):** O UFW é ativado e configurado para bloquear todas as conexões, exceto as permitidas (SSH, Zabbix). Certifique-se de que o IP do seu gateway (`pop_network_ipv4_gateway`) ou o IP da sua máquina de acesso esteja na lista de permissões para não ser bloqueado.
 
+
 ---
+<a id="resultados-esperados"></a>
+
+## ✅ Resultados Esperados
+
+Após a execução bem-sucedida do playbook, a configuração no Zabbix Server deve se apresentar da seguinte forma. Esta seção serve como um guia visual para confirmar que tudo funcionou corretamente.
+
+### 1. Status do Proxy
+
+Navegue até **Administração -> Proxies** na interface do Zabbix.
+
+Você deverá encontrar o proxy recém-criado com as seguintes características:
+-   **Modo:** Ativo
+-   **Encriptação:** PSK
+-   **Estado:** Online
+-   **Última vez visto (idade):** Um valor baixo, como "alguns segundos", indicando comunicação ativa e recente com o Zabbix Server.
+
+*[![alt text](image-2.png)]*
+
+*[![alt text](image.png)]*
+
+*[![alt text](image-1.png)]*
+
+### 2. Status do Host (Agente)
+
+Navegue até **Monitoramento -> Hosts**.
+
+Você deverá encontrar o host correspondente ao agente do proxy com os seguintes indicadores:
+-   O nome do host (ex: `ce-zabbix-rnp-ger-proxy01`) estará na lista.
+-   A coluna **Disponibilidade** mostrará um **ícone ZBX verde**, confirmando que o Zabbix Server está conseguindo coletar dados do agente via TLS/PSK.
+-   Ao clicar no host para editar, a opção **Monitorado por** estará corretamente marcada como **Servidor**.
+
+*[![alt text](image-3.png)]*
+
+*[![alt text](image-4.png)]*
+
+*[![alt text](image-5.png)]*
+
 
 <a id="solucao-de-problemas"></a>
 ## 💡 Solução de Problemas
@@ -213,3 +256,13 @@ As variáveis essenciais a serem configuradas são:
 ## 👨‍💻 Autores
 
 - **GT Monitoramento 2025**
+
+
+
+
+
+
+
+
+
+![alt text](image-5.png)
