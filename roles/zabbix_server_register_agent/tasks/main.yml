@@ -4,50 +4,93 @@
 # Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
 # ======================================================================
 ---
-# roles/zabbix_server_register_agent_simple/tasks/main.yml
----
-# 0) Dependências locais
-- name: Garantir python3-pip instalado
+# 0) Sanidade de variáveis
+- name: Verificar variáveis obrigatórias do agente
+  ansible.builtin.assert:
+    that:
+      - zabbix_server_url is defined and zabbix_server_url | length > 0
+      - zabbix_api_token is defined and zabbix_api_token | length > 0
+      - zabbix_agent_hostname is defined and zabbix_agent_hostname | length > 0
+      - zabbix_agent_hostgroups is defined and (zabbix_agent_hostgroups | length) > 0
+      - zabbix_agent_templates is defined and (zabbix_agent_templates | length) > 0
+      - zabbix_agent_psk_identity is defined and zabbix_agent_psk_identity | length > 0
+      - zabbix_agent_psk_file is defined and zabbix_agent_psk_file | length > 0
+    fail_msg: "Variáveis obrigatórias ausentes para registrar o agente"
+
+# 0.1) Definir IP de origem do agente (fallback)
+- name: Definir IP de origem do agente (fallback)
+  ansible.builtin.set_fact:
+    zabbix_agent_source_ip: "{{ ansible_default_ipv4.address }}"
+  when: zabbix_agent_source_ip is not defined or (zabbix_agent_source_ip | length) == 0
+
+# 0.2) Extrair dados da URL do Zabbix Server (http/https, porta e path)
+- name: Extrair dados da URL do Zabbix Server
+  ansible.builtin.set_fact:
+    zbx_is_https: "{{ (zabbix_server_url | urlsplit('scheme')) == 'https' }}"
+    zbx_host: "{{ zabbix_server_url | urlsplit('hostname') }}"
+    zbx_port: >-
+      {{
+        (zabbix_server_url | urlsplit('port')) |
+        default(((zabbix_server_url | urlsplit('scheme')) == 'https') | ternary(443, 80), true)
+      }}
+    zbx_path_clean: "{{ (zabbix_server_url | urlsplit('path') | trim('/')) | default('zabbix', true) }}"
+
+# 1) Dependências locais
+- name: Garantir python3-pip e requests instalados
   become: yes
   ansible.builtin.apt:
-    name: python3-pip
+    name:
+      - python3-pip
+      - python3-requests
     state: present
     update_cache: yes
-
-- name: Garantir biblioteca requests instalada
-  become: yes
-  ansible.builtin.pip:
-    name: requests
-    state: present
-    extra_args: --break-system-packages
 
 - name: Garantir collection community.zabbix instalada
   ansible.builtin.command: ansible-galaxy collection install community.zabbix -f
   args:
     creates: "{{ lookup('env','HOME') }}/.ansible/collections/ansible_collections/community/zabbix"
 
-# 1) Ler PSK do agente
+# 2) Ler PSK do agente
 - name: Ler PSK do agente
   ansible.builtin.slurp:
     src: "{{ zabbix_agent_psk_file }}"
   register: agent_psk
+  no_log: true
 
 - name: Definir fato com PSK (64 hex)
   ansible.builtin.set_fact:
     agent_psk_key: "{{ (agent_psk.content | b64decode) | trim }}"
+  no_log: true
 
-# 2) Registrar/atualizar host no Zabbix
+# 2.1) Criar/garantir hostgroups (idempotente)
+- name: Garantir que hostgroups do agente existem
+  vars:
+    ansible_connection: httpapi
+    ansible_network_os: community.zabbix.zabbix
+    ansible_host: "{{ zbx_host }}"
+    ansible_httpapi_use_ssl: "{{ zbx_is_https }}"
+    ansible_httpapi_port: "{{ zbx_port | int }}"
+    ansible_httpapi_validate_certs: "{{ zabbix_validate_certs | default(false) }}"
+    ansible_zabbix_url_path: "{{ zbx_path_clean }}"
+    ansible_zabbix_auth_key: "{{ zabbix_api_token }}"
+  community.zabbix.zabbix_group:
+    state: present
+    host_groups:
+      - "{{ item }}"
+  loop: "{{ zabbix_agent_hostgroups }}"
+
+
+# 3) Registrar/atualizar host no Zabbix via httpapi
 - name: Registrar/atualizar host do agente no Zabbix
   vars:
-    # Conexão httpapi para community.zabbix
-    ansible_network_os: community.zabbix.zabbix
     ansible_connection: httpapi
-    ansible_httpapi_use_ssl: false
-    ansible_httpapi_validate_certs: false
-    ansible_zabbix_url_path: "zabbix"
-    ansible_host: "{{ zabbix_server_ip }}"
+    ansible_network_os: community.zabbix.zabbix
+    ansible_host: "{{ zbx_host }}"
+    ansible_httpapi_use_ssl: "{{ zbx_is_https }}"
+    ansible_httpapi_port: "{{ zbx_port | int }}"
+    ansible_httpapi_validate_certs: "{{ zabbix_validate_certs | default(false) }}"
+    ansible_zabbix_url_path: "{{ zbx_path_clean }}"
     ansible_zabbix_auth_key: "{{ zabbix_api_token }}"
-
   community.zabbix.zabbix_host:
     state: present
     status: enabled
@@ -64,7 +107,8 @@
         ip: "{{ zabbix_agent_source_ip }}"
         dns: ""
         port: "10050"
-    tls_connect: 2           # PSK
-    tls_accept: 2            # PSK
+    tls_connect: 2
+    tls_accept: 2
     tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
     tls_psk: "{{ agent_psk_key }}"
+  when: agent_psk is defined and (agent_psk.content | default('')) | length > 0

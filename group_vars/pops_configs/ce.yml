@@ -11,6 +11,12 @@
 zabbix_proxy_hostname: "ce-zabbix-rnp-ger-proxy01"
 zabbix_agent_hostname: "{{ zabbix_proxy_hostname }}"
 
+
+zabbix_agent_hostgroups:
+  - "Linux servers"
+  - "Zabbix proxies"
+  - "POP-CE"       
+
 # ==============================================================================
 # --- Informações de rede do PoP-CE. Usadas para configurar a interface de rede ---
 # ==============================================================================

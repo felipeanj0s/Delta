@@ -6,7 +6,7 @@
 #             - net_security (roles/net_security)
 #             - zabbix_proxy (roles/zabbix_proxy)
 #             - zabbix_agent (roles/zabbix_agent)
-# Versão: 4.0
+# Versão: 5.0
 # Data: 2025-08-27
 # Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br
 # ==============================================================================
@@ -14,16 +14,91 @@
 # ==============================================================================
 # Seção 0: Variáveis Globais
 # ==============================================================================
-# IP do Zabbix Server Central.
+# Aqui ficam variáveis que controlam a comunicação com o Zabbix Server central
+# e que são usadas por múltiplos roles (proxy, agent, etc).
+# ==============================================================================
+
+# ----------------------------------------------------------------------
+# Endereço IP do Zabbix Server Central.
+# Usado pelos agentes (passive/active checks) e proxies para conectar
+# ao servidor de monitoramento principal.
+# ----------------------------------------------------------------------
 zabbix_server_ip: "192.168.0.208"
 
-# IPs dos servidores Zabbix para checagens ativas.
+# ----------------------------------------------------------------------
+# Lista de IPs dos servidores Zabbix que os agentes podem usar para 
+# checagens ativas (ServerActive no agent).
+# Normalmente é só o server central, mas poderia ter mais de um.
+# ----------------------------------------------------------------------
 zabbix_active_server_ips:
   - "192.168.0.208"
 
-# variaveis apenas e somente para zabbix_server_register_proxy
-zabbix_server_url: http://192.168.0.208/zabbix
+# ======================================================================
+# Endpoint da API do Zabbix (escolha UMA opção)
+# ======================================================================
+# A API JSON-RPC do Zabbix é sempre acessada em /zabbix/api_jsonrpc.php.
+# Aqui definimos como o Ansible vai montar a URL para falar com a API.
+#
+# Você pode escolher uma das duas formas:
+#   - Opção A (RECOMENDADA): informar a URL completa já pronta.
+#   - Opção B: informar os componentes (http/https, host, porta, path),
+#              e a role monta a URL final automaticamente.
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# Opção A (RECOMENDADA):
+# Defina a URL completa do Zabbix Server (sem /api_jsonrpc.php).
+# Exemplo HTTP:
+#   http://192.168.0.208/zabbix
+# Exemplo HTTPS:
+#   https://zabbix.rnp.br/zabbix
+#
+# Obs: Se você preencher esta variável, as demais (use_https, host, port, path)
+#      são ignoradas.
+# ----------------------------------------------------------------------
+zabbix_server_url: "http://192.168.0.208/zabbix"
+
+# ----------------------------------------------------------------------
+# Opção B (alternativa):
+# Só usada se a variável zabbix_server_url estiver vazia ("").
+# ----------------------------------------------------------------------
+
+# true = usar https, false = usar http
+zabbix_server_use_https: false
+
+# Hostname ou IP do Zabbix Server
+zabbix_server_host: "192.168.0.208"
+
+# Porta do Zabbix Server.
+# - null (padrão) → assume 443 se for https, 80 se for http.
+# - Se quiser usar uma porta customizada (ex: 8443), basta definir aqui.
+zabbix_server_port: null
+
+# Caminho da interface web do Zabbix, sem barras.
+# Normalmente é "zabbix" (ou "" se a interface estiver na raiz do site).
+zabbix_server_path: "zabbix"
+
+# ----------------------------------------------------------------------
+# HTTPS: validar certificados?
+# - true  = valida o certificado (precisa ser assinado por CA confiável).
+# - false = ignora validação (útil em laboratório ou se usar certificado self-signed).
+# ----------------------------------------------------------------------
+zabbix_validate_certs: false
+
+# ----------------------------------------------------------------------
+# Token de autenticação da API do Zabbix.
+# Esse token é gerado no frontend do Zabbix em:
+#  Administração → Tokens de API.
+# Ele substitui login/senha e deve ter permissões adequadas.
+# ----------------------------------------------------------------------
 zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
+
+# Proxy: enviar PSK/Identity para o Server quando TLS=PSK?
+# - true  = envia PSK e Identity na chamada proxy.update via API.
+# - false = não envia nada (identity/psk só no proxy.conf local).
+# 
+# Recomendado deixar true para manter o server e o proxy alinhados.
+zabbix_register_proxy_psk_to_server: true
 
 # ==============================================================================
 # Seção I: Configurações de Versão e Repositório Zabbix
