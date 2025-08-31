@@ -4,203 +4,67 @@
 # Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
 # ======================================================================
 ---
+# roles/zabbix_server_register_agent_simple/tasks/main.yml
+---
+# 0) Dependências locais
+- name: Garantir python3-pip instalado
+  become: yes
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
 
-# 0) PSK local (arquivo do agente) -> memória
-- name: Agent | Ler PSK do arquivo
+- name: Garantir biblioteca requests instalada
+  become: yes
+  ansible.builtin.pip:
+    name: requests
+    state: present
+    extra_args: --break-system-packages
+
+- name: Garantir collection community.zabbix instalada
+  ansible.builtin.command: ansible-galaxy collection install community.zabbix -f
+  args:
+    creates: "{{ lookup('env','HOME') }}/.ansible/collections/ansible_collections/community/zabbix"
+
+# 1) Ler PSK do agente
+- name: Ler PSK do agente
   ansible.builtin.slurp:
     src: "{{ zabbix_agent_psk_file }}"
-  register: agent_psk_file
+  register: agent_psk
 
-- name: Agent | Definir/validar PSK (64 hex)
+- name: Definir fato com PSK (64 hex)
   ansible.builtin.set_fact:
-    agent_psk_key: "{{ (agent_psk_file.content | b64decode) | trim }}"
-- name: Agent | Sanity PSK
-  ansible.builtin.assert:
-    that:
-      - agent_psk_key is match('^[0-9a-fA-F]{64}$')
-    fail_msg: "PSK do agente inválida: esperados 64 hex em {{ zabbix_agent_psk_file }}."
+    agent_psk_key: "{{ (agent_psk.content | b64decode) | trim }}"
 
-# 1) Headers (Bearer)
-- name: API | Headers (Bearer)
-  ansible.builtin.set_fact:
-    zbx_headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
-  no_log: true
+# 2) Registrar/atualizar host no Zabbix
+- name: Registrar/atualizar host do agente no Zabbix
+  vars:
+    # Conexão httpapi para community.zabbix
+    ansible_network_os: community.zabbix.zabbix
+    ansible_connection: httpapi
+    ansible_httpapi_use_ssl: false
+    ansible_httpapi_validate_certs: false
+    ansible_zabbix_url_path: "zabbix"
+    ansible_host: "{{ zabbix_server_ip }}"
+    ansible_zabbix_auth_key: "{{ zabbix_api_token }}"
 
-# 2) proxy.get (pega proxy_hostid pelo nome do proxy)
-- name: API | proxy.get (por nome)
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "proxy.get"
-      params:
-        filter:
-          name: ["{{ zabbix_proxy_hostname }}"]
-      id: 1
-    # validate_certs: no
-    follow_redirects: all
-  register: zbx_proxy_get
-  failed_when: zbx_proxy_get.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-- name: Fatos | proxyid
-  ansible.builtin.set_fact:
-    agent_proxy_id: "{{ zbx_proxy_get.json.result | map(attribute='proxyid') | first | default('') }}"
-
-# 3) hostgroup.get (por nomes) -> lista de dicts {groupid: "..."}
-- name: API | hostgroup.get
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "hostgroup.get"
-      params:
-        filter:
-          name: "{{ zabbix_agent_hostgroups }}"
-      id: 2
-    follow_redirects: all
-  register: zbx_groups_get
-  failed_when: zbx_groups_get.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-- name: Fatos | Montar groups [{groupid: ...}]
-  ansible.builtin.set_fact:
-    _group_ids: "{{ zbx_groups_get.json.result | map(attribute='groupid') | list }}"
-    agent_groups: []
-- name: Fatos | Push group objects
-  ansible.builtin.set_fact:
-    agent_groups: "{{ agent_groups + [ {'groupid': item} ] }}"
-  loop: "{{ _group_ids }}"
-
-# 4) template.get (por nomes) -> lista de dicts {templateid: "..."}
-- name: API | template.get
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "template.get"
-      params:
-        filter:
-          host: "{{ zabbix_agent_templates }}"
-      id: 3
-    follow_redirects: all
-  register: zbx_tpl_get
-  failed_when: zbx_tpl_get.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-- name: Fatos | Montar templates [{templateid: ...}]
-  ansible.builtin.set_fact:
-    _tpl_ids: "{{ zbx_tpl_get.json.result | map(attribute='templateid') | list }}"
-    agent_templates: []
-- name: Fatos | Push template objects
-  ansible.builtin.set_fact:
-    agent_templates: "{{ agent_templates + [ {'templateid': item} ] }}"
-  loop: "{{ _tpl_ids }}"
-
-# 5) host.get (por host técnico)
-- name: API | host.get (verificar existência)
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "host.get"
-      params:
-        output: "extend"
-        selectInterfaces: "extend"
-        filter:
-          host: ["{{ zabbix_agent_hostname }}"]
-      id: 4
-    follow_redirects: all
-  register: zbx_host_get
-  failed_when: zbx_host_get.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-- name: Fatos | hostid/exists
-  ansible.builtin.set_fact:
-    agent_host_exists: "{{ (zbx_host_get.json.result | default([])) | length > 0 }}"
-    agent_host_id: "{{ zbx_host_get.json.result | map(attribute='hostid') | first | default('') }}"
-
-# 6) host.create (inclui identity/psk AQUI)
-- name: API | host.create (se não existir)
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "host.create"
-      params:
-        host: "{{ zabbix_agent_hostname }}"
-        proxy_hostid: "{{ agent_proxy_id }}"
-        interfaces:
-          - type: 1           # agent
-            main: 1
-            useip: 1
-            ip: "{{ zabbix_agent_source_ip }}"
-            dns: ""
-            port: "10050"
-        groups: "{{ agent_groups }}"
-        templates: "{{ agent_templates }}"
-        tls_connect: 1
-        tls_accept: 1
-        tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
-        tls_psk: "{{ agent_psk_key }}"
-      id: 5
-    follow_redirects: all
-  when: not agent_host_exists
-  register: zbx_host_create
-  failed_when: zbx_host_create.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-# 7) host.update (NÃO reenvia identity/psk)
-- name: API | host.update (se existir)
-  ansible.builtin.uri:
-    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
-    method: POST
-    headers: "{{ zbx_headers }}"
-    body_format: json
-    body:
-      jsonrpc: "2.0"
-      method: "host.update"
-      params:
-        hostid: "{{ agent_host_id }}"
-        proxy_hostid: "{{ agent_proxy_id }}"
-        groups: "{{ agent_groups }}"
-        templates: "{{ agent_templates }}"
-        tls_connect: 1
-        tls_accept: 1
-      id: 6
-    follow_redirects: all
-  when: agent_host_exists
-  register: zbx_host_update
-  failed_when: zbx_host_update.json.error is defined
-  delegate_to: localhost
-  run_once: true
-
-# 8) Mensagem final
-- name: Final | Resultado
-  ansible.builtin.debug:
-    msg: >-
-      Host '{{ zabbix_agent_hostname }}' {{
-        (agent_host_exists | ternary('atualizado', 'criado'))
-      }} com proxy '{{ zabbix_proxy_hostname }}' e TLS PSK via API.
+  community.zabbix.zabbix_host:
+    state: present
+    status: enabled
+    host_name: "{{ zabbix_agent_hostname }}"
+    visible_name: "{{ zabbix_agent_hostname }}"
+    host_groups: "{{ zabbix_agent_hostgroups }}"
+    link_templates: "{{ zabbix_agent_templates }}"
+    monitored_by: proxy
+    proxy: "{{ zabbix_proxy_hostname }}"
+    interfaces:
+      - type: agent
+        main: 1
+        useip: 1
+        ip: "{{ zabbix_agent_source_ip }}"
+        dns: ""
+        port: "10050"
+    tls_connect: 2           # PSK
+    tls_accept: 2            # PSK
+    tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
+    tls_psk: "{{ agent_psk_key }}"
