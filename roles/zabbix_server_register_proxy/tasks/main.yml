@@ -1,24 +1,7 @@
-# ======================================================================
-# GT Monitoramento 2025
-# Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
-# ======================================================================
+# roles/zabbix_server_register_proxy/tasks/main.yml
 ---
-# Este código cria o proxy sem a interface para contornar a API inconsistente do Zabbix Server.
-
-- name: Garantir que o PIP esteja instalado
-  become: yes
-  ansible.builtin.apt:
-    name: python3-pip
-    state: present
-    update_cache: yes
-
-- name: Garantir que a biblioteca zabbix-api esteja instalada
-  ansible.builtin.pip:
-    name: zabbix-api
-    state: present
-    extra_args: --break-system-packages
-
-- name: API | Verificar se o Proxy já existe
+# 1) Ver se já existe
+- name: API | proxy.get (por nome)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -30,16 +13,26 @@
       jsonrpc: "2.0"
       method: "proxy.get"
       params:
-        output: "extend"
         filter:
           name: ["{{ zabbix_proxy_hostname }}"]
+        output: ["proxyid","name","operating_mode","tls_connect","tls_accept"]
       id: 1
-    # validate_certs: no     # deixe comentado se estiver usando HTTP; habilite se for HTTPS self-signed
     follow_redirects: all
-  register: zabbix_proxy_get_response
-  failed_when: "'error' in zabbix_proxy_get_response.json"
+  register: zbx_proxy_get
+  failed_when: zbx_proxy_get.json.error is defined
+  delegate_to: localhost
+  run_once: true
 
-- name: API | Criar o Proxy (sem interface) se não existir
+- name: Fatos | existe/id/estado atual
+  ansible.builtin.set_fact:
+    zbx_proxy_exists: "{{ (zbx_proxy_get.json.result | default([])) | length > 0 }}"
+    zbx_proxy_id: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='proxyid') | first | default('') }}"
+    zbx_mode_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='operating_mode') | first | default(omit) }}"
+    zbx_tls_conn_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_connect') | first | default(omit) }}"
+    zbx_tls_acc_cur:  "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_accept')  | first | default(omit) }}"
+
+# 2) Criar (SEM TLS IDENTITY/PSK!)
+- name: API | proxy.create (mínimo)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -53,26 +46,67 @@
       params:
         name: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: "{{ zabbix_proxy_mode | default(0) | int }}"
-        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
-        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
-        tls_psk_identity: >-
-          {{
-            ((zabbix_proxy_tls_connect | int) == 1 or (zabbix_proxy_tls_accept | int) in [1,3])
-            | ternary(zabbix_proxy_psk_identity, omit)
-          }}
-        tls_psk: >-
-          {{
-            ((zabbix_proxy_tls_connect | int) == 1 or (zabbix_proxy_tls_accept | int) in [1,3])
-            | ternary(proxy_api_psk_key, omit)
-          }}
+        operating_mode: "{{ zabbix_proxy_mode | int }}"
       id: 2
-    # validate_certs: no
     follow_redirects: all
-  register: zabbix_proxy_create_response
-  failed_when: "'error' in zabbix_proxy_create_response.json"
-  when: (zabbix_proxy_get_response.json.result | default([])) | length == 0
+  when: not zbx_proxy_exists
+  register: zbx_proxy_create
+  failed_when: zbx_proxy_create.json.error is defined
+  delegate_to: localhost
+  run_once: true
 
-- name: Final | Exibir resultado da operação
+# 3) Descobrir ID após create
+- name: Atualizar ID (se criou agora)
+  ansible.builtin.set_fact:
+    zbx_proxy_id: "{{ zbx_proxy_create.json.result.proxyids[0] }}"
+  when: not zbx_proxy_exists
+
+# 4) Ajustar modo/TLS (APENAS tls_connect/tls_accept)
+- name: Precisa atualizar modo/TLS?
+  ansible.builtin.set_fact:
+    zbx_needs_update: >-
+      {{
+        (zbx_proxy_id | length > 0) and (
+          (zbx_proxy_exists and (
+            (zbx_mode_cur | int)      != (zabbix_proxy_mode | int) or
+            (zbx_tls_conn_cur | int)  != (zabbix_proxy_tls_connect | int) or
+            (zbx_tls_acc_cur  | int)  != (zabbix_proxy_tls_accept  | int)
+          ))
+          or
+          (not zbx_proxy_exists)      # se acabou de criar, aplicar TLS desejado
+        )
+      }}
+
+- name: API | proxy.update (somente modo/TLS)
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.update"
+      params:
+        proxyid: "{{ zbx_proxy_id }}"
+        operating_mode: "{{ zabbix_proxy_mode | int }}"
+        tls_connect: "{{ zabbix_proxy_tls_connect | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept  | int }}"
+      id: 3
+    follow_redirects: all
+  when: zbx_needs_update
+  register: zbx_proxy_update
+  failed_when: zbx_proxy_update.json.error is defined
+  delegate_to: localhost
+  run_once: true
+
+# 5) Mensagem
+- name: Final | Resultado
   ansible.builtin.debug:
-    msg: "AVISO: Proxy '{{ zabbix_proxy_hostname }}' criado/verificado com sucesso. A interface (IP) deve ser configurada manualmente na interface web do Zabbix."
+    msg: >-
+      Proxy '{{ zabbix_proxy_hostname }}' {{
+        (not zbx_proxy_exists) | ternary('criado',
+        (zbx_needs_update | ternary('atualizado','verificado')))
+      }} via API.
+      ⚠️ PSK/identity são definidas apenas no zabbix_proxy.conf do proxy.
