@@ -130,7 +130,8 @@ O **servidor de destino** deve atender aos seguintes requisitos:
    ansible-playbook -i hosts prov_zbxproxy.yml --limit sigla_do_estado -K
    ```
 
-   Guia rápido do -v para debug:
+Guia rápido do -v para debug:
+
 | Parâmetro | Descrição |
 | :--- | :--- |
 | `--limit <grupo>` | Executa apenas para o grupo especificado (ex: `ce`). |
