@@ -1,35 +1,41 @@
 # ==============================================================================
 # GT Monitoramento 2025
 # Template de Configuração do OpenSSH Server (sshd_config.j2)
-# Descrição: Configuração essencial e segura do SSH baseada em variáveis do Ansible.
+# Versão: Habilitado para login com senha e porta customizada.
 # ==============================================================================
 
-# --- Parâmetros de Conexão e Segurança ---
+# --- Parâmetros de Conexão ---
 Port {{ ssh_port }}
 Protocol 2
 
-# Login root
-PermitRootLogin {{ 'prohibit-password' if ssh_port != 22 else 'no' }}
+# --- Configurações de Autenticação ---
 
-# Autenticação por senha
+# Desabilita o login direto como 'root' (prática de segurança essencial)
+PermitRootLogin no
+
+# Permite a autenticação por senha para usuários normais, como solicitado.
 PasswordAuthentication yes
+
+# Desabilitado pois PasswordAuthentication está ativo.
+ChallengeResponseAuthentication no
+
+# Garante que senhas vazias não sejam permitidas.
+PermitEmptyPasswords no
 
 # --- Chaves de Autenticação e Host ---
 HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_dsa_key
+# HostKey /etc/ssh/ssh_host_dsa_key # Obsoleto e inseguro
 HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
-AuthorizedKeysFile %h/.ssh/authorized_keys
+HostKey /etc/ssh/ssh_host_ed225519_key
+AuthorizedKeysFile .ssh/authorized_keys
 
 # --- Parâmetros de Sessão e Log ---
 UsePrivilegeSeparation yes
 SyslogFacility AUTH
 LogLevel INFO
-LoginGraceTime {{ ssh_login_grace_time | default(120) }}
+LoginGraceTime {{ ssh_login_grace_time | default(60) }}
 StrictModes yes
 IgnoreRhosts yes
-PermitEmptyPasswords no
-ChallengeResponseAuthentication no
 X11Forwarding yes
 PrintMotd no
 PrintLastLog yes
