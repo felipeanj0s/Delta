@@ -32,7 +32,7 @@ Automação completa para instalar, configurar e registrar um **Zabbix Proxy** (
 
 ---
 
-## Arquitetura (alto nível)
+## Arquitetura 
 
 * Operador acessa a VM/servidor do POP, clona este repositório e roda o playbook.
 * Toda configuração é aplicada **no host local**; a única comunicação externa é com **API/Trappers** do Zabbix Server para registro do Proxy e do Agent. 
