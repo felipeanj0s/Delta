@@ -84,8 +84,8 @@ cd dev-zbxproxy/
 
 #### Passo 2: Configurar o Inventário e Variáveis
 
-1.  **Inventário (`inventory/hosts`):** O arquivo já vem pronto para execução local. Não precisa de alterações.
-2.  **Variáveis Globais (`group_vars/all.yml`):** Ajuste os parâmetros do seu Zabbix Server.
+1.  **Inventário (`hosts`):** O arquivo já vem pronto para execução local. Não precisa de alterações.
+2.  **Variáveis Globais (`group_vars/all.yml`):** Ajuste os parâmetros de configurações especificas relacionadas aos templates das roles. Não é recomendado alterar, pois os valores foram parâmetrizados pela GER/Backbone.
 3.  **Variáveis Locais (`group_vars/pops_configs/`):** Crie ou edite o arquivo `.yml` correspondente à sigla do estado que você está provisionando (ex: `ce.yml`).
 
 > **Importante:** O nome do grupo no inventário (ex: `[ce]`) **deve** ser idêntico ao nome do arquivo de variáveis (ex: `ce.yml`). É essa convenção que permite à role `setup_context` carregar as configurações corretas.
