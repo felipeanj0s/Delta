@@ -11,9 +11,8 @@ ProxyMode={{ zabbix_proxy_mode | default(0) }}
 ### PROXY SERVICE
 Hostname={{ zabbix_proxy_hostname }}
 Server={{ zabbix_server_ip }}
-ServerPort={{ zabbix_proxy_listenport | default(10051) }}   # porta do Server (conexão proxy->server)
-ListenPort={{ zabbix_proxy_listenport | default(10051) }}   # porta do proxy para agentes ATIVOS
-SourceIP={{ pop_network_ipv4_address | split('/') | first }}
+ServerPort={{ zabbix_server_port_for_proxy | default(10051) }}   # porta do Server (conexão proxy->server)
+ListenPort={{ zabbix_proxy_listenport | default(10051) }}       # porta do proxy para agentes ATIVOS
 
 ### GENERAL
 PidFile={{ zabbix_proxy_pidfile }}
