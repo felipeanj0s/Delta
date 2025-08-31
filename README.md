@@ -140,15 +140,6 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 <a id="configuracao-detalhada"></a>
 ## 🔧 Configuração Detalhada
-Com certeza\! Desenvolvi a seção de configuração a partir do seu resumo, adicionando mais detalhes, explicações e exemplos para deixar o `README` ainda mais claro e fácil de usar para qualquer pessoa que for executar o projeto.
-
-Aqui está a seção reescrita:
-
------
-
-\<a id="configuracao-detalhada"\>\</a\>
-
-## 🔧 Configuração Detalhada
 
 A personalização do provisionamento é feita em dois níveis: **variáveis globais** que se aplicam a todos os proxies e **variáveis locais** específicas para cada Ponto de Presença (POP). Não é recomendado alterar as variáveis globais, pois estes valores foram parâmetrizados pela GER/Backbone para compatibilidade com o Zabbix Server Central.
 
