@@ -26,7 +26,19 @@ Automação completa para instalar, configurar e registrar um **Zabbix Proxy** (
 * Provisiona **Zabbix Proxy (TLS/PSK)** e **Zabbix Agent 2** do próprio host.
 * Faz **hardening** (UFW, Fail2Ban, SSH), configura **hostname** e **rede** (Netplan).
 * Integra **automaticamente** no Zabbix Server via **API** para registrar **Proxy** e **Host do Agent**.
-* Execução **idempotente** e **local** (no próprio servidor de destino). ([GitHub][1])
+* Execução **idempotente** e **local** (no próprio servidor de destino). 
+
+
+
+---
+
+## Arquitetura (alto nível)
+
+* Operador acessa a VM/servidor do POP, clona este repositório e roda o playbook.
+* Toda configuração é aplicada **no host local**; a única comunicação externa é com **API/Trappers** do Zabbix Server para registro do Proxy e do Agent. 
+
+
+Topologia:
 
 ```mermaid
 graph TD;
@@ -52,12 +64,7 @@ graph TD;
     D -- "Comunicação TLS/PSK" --> ZabbixServer;
 ```
 
----
 
-## Arquitetura (alto nível)
-
-* Operador acessa a VM/servidor do POP, clona este repositório e roda o playbook.
-* Toda configuração é aplicada **no host local**; a única comunicação externa é com **API/Trappers** do Zabbix Server para registro/telemetria. ([GitHub][1])
 
 ---
 
