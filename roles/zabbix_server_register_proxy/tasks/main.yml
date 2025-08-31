@@ -1,51 +1,70 @@
 # ======================================================================
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_proxy/tasks/main.yml
+# Cria/atualiza o Proxy no Zabbix (sem interface/IP) — interface é ajustada na UI.
 # ======================================================================
 ---
-# Este código cria o proxy sem a interface para contornar a API inconsistente do Zabbix Server.
+# --- Headers padrão da API (Bearer) ---
+- name: API | Definir headers padrão com Bearer token
+  ansible.builtin.set_fact:
+    zbx_headers:
+      Content-Type: "application/json-rpc"
+      Authorization: "Bearer {{ zabbix_api_token }}"
+  no_log: true
 
-- name: Garantir que o PIP esteja instalado
-  become: yes
-  ansible.builtin.apt:
-    name: python3-pip
-    state: present
-    update_cache: yes
+# --- Sanity das variáveis principais ---
+- name: Sanity | Verificar operating_mode / tls_connect / tls_accept
+  ansible.builtin.assert:
+    that:
+      - (zabbix_proxy_mode | int) in [0,1]
+      - (zabbix_proxy_tls_connect | int) in [1,2]       # 1=PSK, 2=Cert
+      - (zabbix_proxy_tls_accept  | int) in [1,2,3,4]   # bitmask
+    fail_msg: "Valores inválidos para modo/TLS do proxy."
 
-- name: Garantir que a biblioteca zabbix-api esteja instalada
-  ansible.builtin.pip:
-    name: zabbix-api
-    state: present
-    extra_args: --break-system-packages
+- name: Sanity | Verificar PSK (64 hex) quando usar PSK
+  ansible.builtin.assert:
+    that:
+      - (zabbix_proxy_tls_connect | int) == 1 or (zabbix_proxy_tls_accept | int) in [1,3]
+      - ((proxy_api_psk_key | default(zabbix_proxy_psk_key, true)) is match('^[0-9a-fA-F]{64}$'))
+    fail_msg: "PSK ausente/inegível. Defina proxy_api_psk_key ou zabbix_proxy_psk_key com 64 hex."
+  when: (zabbix_proxy_tls_connect | int) == 1 or (zabbix_proxy_tls_accept | int) in [1,3]
 
-- name: API | Verificar se o Proxy já existe
+# --- Verificar se o Proxy já existe ---
+- name: API | proxy.get (por nome)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
-    headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
+    headers: "{{ zbx_headers }}"
     body_format: json
     body:
       jsonrpc: "2.0"
       method: "proxy.get"
       params:
-        output: "extend"
         filter:
           name: ["{{ zabbix_proxy_hostname }}"]
+        output:
+          - proxyid
+          - name
+          - operating_mode
+          - tls_connect
+          - tls_accept
       id: 1
-    validate_certs: no
     follow_redirects: all
-  register: zabbix_proxy_get_response
-  failed_when: "'error' in zabbix_proxy_get_response.json"
+  register: zbx_proxy_get
+  failed_when: "zbx_proxy_get.json is defined and (zbx_proxy_get.json.error is defined)"
+  delegate_to: localhost
+  run_once: true
 
-- name: API | Criar o Proxy (sem interface) se não existir
+- name: API | Normalizar JSON de proxy.get
+  ansible.builtin.set_fact:
+    zbx_proxy_json: "{{ zbx_proxy_get.json | default({}) }}"
+
+# --- Criar se não existir ---
+- name: API | proxy.create (sem interface)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
-    headers:
-      Content-Type: "application/json-rpc"
-      Authorization: "Bearer {{ zabbix_api_token }}"
+    headers: "{{ zbx_headers }}"
     body_format: json
     body:
       jsonrpc: "2.0"
@@ -53,18 +72,48 @@
       params:
         name: "{{ zabbix_proxy_hostname }}"
         description: "Proxy {{ zabbix_proxy_hostname }} provisionado via Ansible"
-        operating_mode: "{{ zabbix_proxy_mode | default(0) | int }}"
-        tls_connect: "{{ zabbix_proxy_tls_connect | default(1) | int }}"
-        tls_accept: "{{ zabbix_proxy_tls_accept | default(1) | int }}"
-        tls_psk_identity: "{{ proxy_api_psk_identity }}"
-        tls_psk: "{{ proxy_api_psk_key }}"
-      id: 1
-    validate_certs: no
+        operating_mode: "{{ zabbix_proxy_mode | int }}"
+        tls_connect: "{{ zabbix_proxy_tls_connect | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept | int }}"
+        tls_psk_identity: "{{ zabbix_proxy_psk_identity }}"
+        tls_psk: "{{ proxy_api_psk_key | default(zabbix_proxy_psk_key) }}"
+      id: 2
     follow_redirects: all
-  register: zabbix_proxy_create_response
-  failed_when: "'error' in zabbix_proxy_create_response.json"
-  when: (zabbix_proxy_get_response.json.result | default([])) | length == 0
+  register: zbx_proxy_create
+  failed_when: "zbx_proxy_create.json is defined and (zbx_proxy_create.json.error is defined)"
+  when: (zbx_proxy_json.result | default([]) | length) == 0
+  delegate_to: localhost
+  run_once: true
 
-- name: Final | Exibir resultado da operação
+# --- Atualizar se já existir (garantir TLS e modo corretos) ---
+- name: API | proxy.update (ajustar TLS/mode)
+  ansible.builtin.uri:
+    url: "{{ zabbix_server_url }}/api_jsonrpc.php"
+    method: POST
+    headers: "{{ zbx_headers }}"
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "proxy.update"
+      params:
+        proxyid: "{{ zbx_proxy_json.result[0].proxyid }}"
+        operating_mode: "{{ zabbix_proxy_mode | int }}"
+        tls_connect: "{{ zabbix_proxy_tls_connect | int }}"
+        tls_accept: "{{ zabbix_proxy_tls_accept | int }}"
+        tls_psk_identity: "{{ zabbix_proxy_psk_identity }}"
+        # Observação: trocar o valor da PSK via update pode não ser aceito em todas versões.
+      id: 3
+    follow_redirects: all
+  register: zbx_proxy_update
+  failed_when: "zbx_proxy_update.json is defined and (zbx_proxy_update.json.error is defined)"
+  when: (zbx_proxy_json.result | default([]) | length) > 0
+  delegate_to: localhost
+  run_once: true
+
+# --- Mensagem final ---
+- name: Final | Exibir resultado
   ansible.builtin.debug:
-    msg: "AVISO: Proxy '{{ zabbix_proxy_hostname }}' criado/verificado com sucesso. A interface (IP) deve ser configurada manualmente na interface web do Zabbix."
+    msg: >-
+      Proxy '{{ zabbix_proxy_hostname }}'
+      {{ (zbx_proxy_json.result | default([]) | length) == 0 | ternary('criado', 'verificado/atualizado') }}
+      com sucesso via API. A interface (IP) permanece para ajuste manual na UI.

@@ -1,59 +1,48 @@
 ---
-# ============================================================================== 
-# Tasks da Role 'zabbix_agent' - Modificado
+# ==============================================================================
+# Tasks da Role 'zabbix_agent' 
 # Arquivo: roles/zabbix_agent/tasks/main.yml
 # ==============================================================================
 
-# ============================================================================== 
-# --- Instalação do Zabbix Agent ---
-# ============================================================================== 
-- name: Instalar Zabbix Agent
+# --- Instalação do Zabbix Agent 2 ---
+- name: Instalar Zabbix Agent2
   ansible.builtin.apt:
     name: "{{ zabbix_agent_package }}"
     state: present
     update_cache: yes
 
-# ============================================================================== 
-# --- Criar diretório para PID e socket ---
-# ============================================================================== 
-- name: Criar diretório para PID e socket do Zabbix Agent
+# --- Diretórios necessários ---
+- name: Garantir /run/zabbix existe (PID/Socket)
   ansible.builtin.file:
-    path: "/run/zabbix"
+    path: /run/zabbix
     state: directory
     owner: zabbix
     group: zabbix
     mode: '0755'
 
-# ============================================================================== 
-# --- Geração e Configuração da Chave PSK ---
-# ============================================================================== 
-- name: Verificar status do arquivo PSK do agente
-  ansible.builtin.stat:
-    path: "{{ zabbix_agent_psk_file }}"
-  register: agent_psk_file_status
-  changed_when: false
-
-- name: Criar diretório para o arquivo PSK do agente
+- name: Garantir diretório do PSK existe
   ansible.builtin.file:
     path: "{{ zabbix_agent_psk_file | dirname }}"
     state: directory
     owner: zabbix
     group: zabbix
     mode: '0755'
-  when: not agent_psk_file_status.stat.exists
 
-- name: Gerar e salvar valor da chave PSK
-  ansible.builtin.shell: openssl rand -hex 32
+# --- PSK: gerar somente se não existir (sem vazar em log) ---
+- name: Verificar se o PSK do agente já existe
+  ansible.builtin.stat:
+    path: "{{ zabbix_agent_psk_file }}"
+  register: agent_psk_file_status
+  changed_when: false
+
+- name: Gerar PSK do agente (somente se não existir)
+  ansible.builtin.command: openssl rand -hex 32
   register: agent_psk_value
   when: not agent_psk_file_status.stat.exists
   changed_when: true
+  no_log: true
 
-- name: Exibir valor da chave PSK do agente
-  ansible.builtin.debug:
-    msg: "VALOR DA CHAVE PSK DO AGENTE: {{ agent_psk_value.stdout }}"
-  when: not agent_psk_file_status.stat.exists
-
-- name: Criar arquivo PSK e definir permissões
+- name: Criar arquivo PSK com permissões seguras
   ansible.builtin.copy:
     content: "{{ agent_psk_value.stdout }}"
     dest: "{{ zabbix_agent_psk_file }}"
@@ -61,11 +50,24 @@
     group: zabbix
     mode: '0600'
   when: not agent_psk_file_status.stat.exists
+  no_log: true
 
-# ============================================================================== 
-# --- Configuração do Zabbix Agent ---
-# ============================================================================== 
-- name: Configurar Zabbix Agent
+# --- Expor PSK como fato para outros roles (ex.: registro via API) ---
+- name: Ler PSK do agente do disco
+  ansible.builtin.slurp:
+    src: "{{ zabbix_agent_psk_file }}"
+  register: agent_psk_file_content
+  changed_when: false
+  no_log: true
+
+- name: Definir fato com o valor da PSK
+  ansible.builtin.set_fact:
+    agent_psk_key: "{{ (agent_psk_file_content.content | b64decode) | trim }}"
+    cacheable: true
+  no_log: true
+
+# --- Configuração e serviço ---
+- name: Aplicar configuração do Zabbix Agent2
   ansible.builtin.template:
     src: zabbix_agent2.conf.j2
     dest: /etc/zabbix/zabbix_agent2.conf
@@ -74,10 +76,7 @@
     mode: '0644'
   notify: Reiniciar Zabbix Agent
 
-# ============================================================================== 
-# --- Gestão do Serviço ---
-# ============================================================================== 
-- name: Habilitar e iniciar Zabbix Agent
+- name: Habilitar e iniciar Zabbix Agent2
   ansible.builtin.systemd:
     name: zabbix-agent2
     enabled: yes

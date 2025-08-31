@@ -4,9 +4,7 @@
 # Arquivo: roles/zabbix_proxy/tasks/main.yml
 # ==============================================================================
 ---
-# ==============================================================================
-# --- Instalação do Repositório e Pacotes Zabbix ---
-# ==============================================================================
+# --- Repositório e Pacotes ---
 - name: Repositório | Verificar se o repositório Zabbix já está instalado
   ansible.builtin.stat:
     path: "/etc/apt/sources.list.d/zabbix.list"
@@ -28,9 +26,7 @@
     name: "{{ zabbix_proxy_package }}"
     state: present
 
-# ==============================================================================
-# --- Configuração de Diretórios ---
-# ==============================================================================
+# --- Diretórios ---
 - name: Diretórios | Criar diretórios necessários para o Zabbix Proxy
   ansible.builtin.file:
     path: "{{ item }}"
@@ -44,9 +40,7 @@
     - "{{ zabbix_proxy_socket_dir }}"
     - "{{ zabbix_proxy_psk_file | dirname }}"
 
-# ==============================================================================
-# --- Gestão da Chave PSK (Lógica Refinada) ---
-# ==============================================================================
+# --- PSK ---
 - name: PSK | Verificar status do arquivo
   ansible.builtin.stat:
     path: "{{ zabbix_proxy_psk_file }}"
@@ -80,9 +74,7 @@
     proxy_api_psk_key: "{{ proxy_psk_file_content.content | b64decode | trim }}"
     cacheable: yes
 
-# ==============================================================================
-# --- Configuração e Gestão do Serviço ---
-# ==============================================================================
+# --- Configuração e Serviço ---
 - name: Configuração | Aplicar configuração do Zabbix Proxy
   ansible.builtin.template:
     src: zabbix_proxy.conf.j2

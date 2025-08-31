@@ -2,89 +2,95 @@
 # ==============================================================================
 # Tasks da Role 'network_security'
 # Arquivo: roles/net_security/tasks/main.yml
-# Descrição:
-#   Este playbook orquestra a aplicação de configurações essenciais de segurança
-#   e rede no servidor, garantindo um estado inicial seguro e funcional.
-#   As tarefas incluem:
-#    - Configuração do nome do host (`hostname`).
-#    - Aplicação da configuração de rede (`ifupdown` no Debian).
-#    - Instalação e ativação de serviços de segurança (`UFW` e `Fail2Ban`).
-#    - Personalização da porta SSH e outras diretivas de segurança.
-#    - Aplicação granular de regras de firewall de entrada e saída.
-#   Todas as variáveis utilizadas são gerenciadas de forma centralizada
-#   no arquivo `group_vars/all.yml`.
 # ==============================================================================
 
-# ==============================================================================
-# --- Verificação de Conectividade ---
-# Esta tarefa simples executa um teste de ping para cada IP na lista
-# de forma separada.
-# ==============================================================================
-- name: Construir lista de IPs para teste de conectividade
+# ──────────────────────────────────────────────────────────────────────────────
+# Pré-requisitos de rede (ifupdown2 preferível; fallback para ifupdown)
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Rede | Instalar ifupdown2 (preferível)
+  become: yes
+  ansible.builtin.apt:
+    name: ifupdown2
+    state: present
+    update_cache: yes
+
+# (Opcional) fallback, útil caso seu repositório não tenha ifupdown2
+- name: Rede | Garantir ifupdown clássico (fallback)
+  become: yes
+  ansible.builtin.apt:
+    name: ifupdown
+    state: present
+  when: false  # habilite se realmente precisar do fallback
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Verificação de conectividade
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Conectividade | Normalizar variáveis (IPv6/dns/gw podem não existir)
+  ansible.builtin.set_fact:
+    _ipv6_addr_safe: "{{ (pop_network_ipv6_address | default('')) | regex_replace('/.*$', '') }}"
+    _ipv6_gw_safe: "{{ pop_network_ipv6_gateway | default('') }}"
+    _dns_list_safe: "{{ pop_network_dns_list | default([]) }}"
+
+- name: Conectividade | Construir lista de IPs para teste
   ansible.builtin.set_fact:
     ips_para_testar: >-
       {{
         [
           zabbix_server_ip,
-          pop_network_ipv6_address.split('/')[0],
-          pop_network_ipv4_gateway,
-          pop_network_ipv6_gateway
-        ] | select('ne', '') | list + pop_network_dns_list | select('ne', '') | list
+          _ipv6_addr_safe,
+          pop_network_ipv4_gateway | default(''),
+          _ipv6_gw_safe
+        ]
+        | select('ne','') | list
+        + (_dns_list_safe | select('ne','') | list)
       }}
 
-- name: Testar a conectividade com os IPs de destino
+- name: Conectividade | Ping em destinos relevantes
   ansible.builtin.command: "ping -c 3 {{ item }}"
   loop: "{{ ips_para_testar }}"
   register: ping_results
   changed_when: false
   ignore_errors: true
 
-# ==============================================================================
-# --- Exibir Resultados dos Testes ---
-# Mostra o resultado do teste para cada IP, indicando se foi bem-sucedido ou não.
-# ==============================================================================
-- name: Mostrar resultados dos testes de conectividade
+- name: Conectividade | Mostrar resultados
   ansible.builtin.debug:
-    msg: "Teste para {{ item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"
+    msg: "Teste para {{ item.item }}: {{ 'Sucesso' if item.rc == 0 else 'Falha' }}"
   loop: "{{ ping_results.results }}"
 
-# ==============================================================================
-# --- Configuração do Hostname ---
-# Define o nome da máquina para facilitar a identificação na rede e no
-# sistema de monitoramento Zabbix.
-# ==============================================================================
-- name: Configurar o hostname da máquina
+# ──────────────────────────────────────────────────────────────────────────────
+# Hostname e /etc/hosts
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Hostname | Definir nome da máquina
+  become: yes
   ansible.builtin.hostname:
     name: "{{ zabbix_proxy_hostname }}"
 
-- name: Atualizar /etc/hosts
+- name: Hostname | Garantir entrada em /etc/hosts
+  become: yes
   ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: '^127\.0\.1\.1'
     line: "127.0.1.1 {{ zabbix_proxy_hostname }}"
     state: present
 
-
-# ==============================================================================
-# --- Configuração de Rede (Debian) ---
-# Gera o arquivo de configuração de rede para o Debian (`/etc/network/interfaces`)
-# a partir do template `interfaces.j2`.
-# ==============================================================================
-- name: Configurar rede via interfaces (Debian)
+# ──────────────────────────────────────────────────────────────────────────────
+# Rede (Debian) via /etc/network/interfaces
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Rede | Aplicar template /etc/network/interfaces
+  become: yes
   ansible.builtin.template:
     src: interfaces.j2
-    dest: "/etc/network/interfaces"
+    dest: /etc/network/interfaces
     owner: root
     group: root
     mode: '0644'
   notify: Reiniciar Networking
 
-# ==============================================================================
-# --- Configuração do Banner de Acesso ---
-# Aplica um template para criar o banner de aviso no login SSH.
-# O banner é dinâmico, usando o nome do host via variável.
-# ==============================================================================
-- name: Criar banner de aviso (issue.net)
+# ──────────────────────────────────────────────────────────────────────────────
+# Banner e MOTD
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Banner | /etc/issue.net
+  become: yes
   ansible.builtin.template:
     src: issue.net.j2
     dest: "/etc/issue.net"
@@ -92,12 +98,8 @@
     group: root
     mode: "0644"
 
-# ==============================================================================
-# --- Configuração do MOTD (Message of the Day) ---
-# Adiciona um script personalizado para exibir informações do sistema
-# após o login.
-# ==============================================================================
-- name: Criar script personalizado para MOTD
+- name: MOTD | Script informativo
+  become: yes
   ansible.builtin.template:
     src: "motd_info.j2"
     dest: "/etc/update-motd.d/99-ansible-info"
@@ -106,11 +108,11 @@
     mode: "0755"
   notify: Atualizar MOTD
 
-# ==============================================================================
-# --- Instalação de Ferramentas de Segurança ---
-# Garante a presença dos pacotes `ufw` e `fail2ban`.
-# ==============================================================================
-- name: Instalar UFW e Fail2Ban
+# ──────────────────────────────────────────────────────────────────────────────
+# Segurança (UFW / Fail2ban / SSH)
+# ──────────────────────────────────────────────────────────────────────────────
+- name: Segurança | Instalar UFW e Fail2Ban
+  become: yes
   ansible.builtin.apt:
     name:
       - ufw
@@ -118,28 +120,26 @@
     state: present
     update_cache: yes
 
-# ==============================================================================
-# --- Configuração da Porta SSH ---
-# Aplica um template para configurar a porta de escuta do SSH e outras diretivas.
-# ==============================================================================
-- name: Configurar a porta do SSH no sshd_config
+- name: SSH | Aplicar sshd_config
+  become: yes
   ansible.builtin.template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
     owner: root
     group: root
     mode: '0600'
-  notify:
-    - Reiniciar SSH
+  notify: Reiniciar SSH
 
-- name: Validar configuração SSH
+- name: SSH | Validar configuração
+  become: yes
   ansible.builtin.command: sshd -t
+  changed_when: false
 
-# ==============================================================================
-# --- Configuração de Regras do UFW (Inbound) ---
-# Aplica as regras de firewall para tráfego de entrada.
-# ==============================================================================
-- name: Configurar regras UFW (entrada)
+# ──────────────────────────────────────────────────────────────────────────────
+# UFW (Inbound)
+# ──────────────────────────────────────────────────────────────────────────────
+- name: UFW | Regras de entrada
+  become: yes
   ansible.builtin.ufw:
     rule: "{{ item.0.rule }}"
     from_ip: "{{ item.1 }}"
@@ -147,16 +147,14 @@
     port: "{{ item.0.port | default(omit) }}"
     proto: "{{ item.0.proto | default(omit) }}"
     comment: "{{ item.0.comment | default(omit) }}"
-  loop: "{{ ufw_rules | subelements('from') }}"
+  loop: "{{ (ufw_rules | default([])) | subelements('from') }}"
   when: item.0.direction is not defined or item.0.direction == 'in'
 
-
-
-# ==============================================================================
-# --- Configuração de Regras do UFW (Outbound) ---
-# Aplica as regras de firewall para tráfego de saída.
-# ==============================================================================
-- name: Configurar regras UFW (saída)
+# ──────────────────────────────────────────────────────────────────────────────
+# UFW (Outbound)
+# ──────────────────────────────────────────────────────────────────────────────
+- name: UFW | Regras de saída
+  become: yes
   ansible.builtin.ufw:
     rule: "{{ item.0.rule }}"
     direction: "{{ item.0.direction }}"
@@ -165,27 +163,13 @@
     port: "{{ item.0.port | default(omit) }}"
     proto: "{{ item.0.proto | default(omit) }}"
     comment: "{{ item.0.comment | default(omit) }}"
-  loop: "{{ ufw_rules | subelements('from') }}"
+  loop: "{{ (ufw_rules | default([])) | subelements('from') }}"
   when: item.0.direction is defined and item.0.direction == 'out'
 
-
-# ==============================================================================
-# --- Ativação do Firewall ---
-# Habilita o firewall `ufw` após a aplicação de todas as regras.
-# ==============================================================================
-- name: Habilitar UFW
+# ──────────────────────────────────────────────────────────────────────────────
+# UFW | Habilitar
+# ──────────────────────────────────────────────────────────────────────────────
+- name: UFW | Habilitar firewall
+  become: yes
   ansible.builtin.ufw:
     state: enabled
-
-# ==============================================================================
-# --- Configuração do Fail2Ban para SSH ---
-# Copia o template de configuração do Fail2Ban para a jail 'sshd'.
-# ==============================================================================
-- name: Configurar Fail2Ban SSHD
-  ansible.builtin.template:
-    src: sshd.local.j2
-    dest: /etc/fail2ban/jail.d/sshd.local
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Reiniciar Fail2Ban

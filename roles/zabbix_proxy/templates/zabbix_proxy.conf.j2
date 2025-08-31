@@ -1,20 +1,18 @@
 # ==============================================================================
 # Template de Configuração do Zabbix Proxy
 # Arquivo: roles/zabbix_proxy/templates/zabbix_proxy.conf.j2
-# Descrição: Template para Proxy em modo ATIVO com PSK
+# Descrição: Proxy em modo ATIVO com PSK (Zabbix 7.2)
 # ==============================================================================
 
 ### PROXY MODE
+# 0 = ativo, 1 = passivo
 ProxyMode=0
-ProxyBufferMode={{ zabbix_proxy_buffermode }}
-ProxyMemoryBufferSize={{ zabbix_proxy_memory_buffer_size }}
-ProxyOfflineBuffer={{ zabbix_proxy_offline_buffer }}
-ProxyLocalBuffer={{ zabbix_proxy_proxybuffer }}
 
 ### PROXY SERVICE
 Hostname={{ zabbix_proxy_hostname }}
 Server={{ zabbix_server_ip }}
-ListenPort={{ zabbix_proxy_listenport }}
+ServerPort={{ zabbix_proxy_listenport | default(10051) }}   # porta do Server (conexão proxy->server)
+ListenPort={{ zabbix_proxy_listenport | default(10051) }}   # porta do proxy para agentes ATIVOS
 SourceIP={{ pop_network_ipv4_address | split('/') | first }}
 
 ### GENERAL
@@ -25,7 +23,7 @@ SocketDir={{ zabbix_proxy_socket_dir }}
 StartPollers={{ zabbix_proxy_startpollers }}
 StartPreprocessors={{ zabbix_proxy_startpreprocessors }}
 StartPollersUnreachable={{ zabbix_proxy_startpollersunreachable }}
-#StartHistoryPollers={{ zabbix_proxy_starthistorypollers }}
+#StartHistoryPollers={{ zabbix_proxy_starthistorypollers }}   # (normalmente no server)
 StartTrappers={{ zabbix_proxy_starttrappers }}
 StartPingers={{ zabbix_proxy_startpingers }}
 StartDiscoverers={{ zabbix_proxy_startdiscoverers }}
@@ -34,7 +32,7 @@ StartSNMPPollers={{ zabbix_proxy_startsnmppollers }}
 StartAgentPollers={{ zabbix_proxy_startagentpollers }}
 StartDBSyncers={{ zabbix_proxy_startdbsyncers }}
 StartIPMIPollers={{ zabbix_proxy_startipmipollers }}
-StartVMwareCollectors={{ zabbix_proxy_startvmwarecollectors }}
+#StartVMwareCollectors={{ zabbix_proxy_startvmwarecollectors }}  # geralmente no server
 
 ### CACHE
 CacheSize={{ zabbix_proxy_cachesize }}
@@ -72,12 +70,8 @@ UnreachableDelay={{ zabbix_proxy_unreachable_delay }}
 FpingLocation={{ zabbix_proxy_fping_location }}
 Fping6Location={{ zabbix_proxy_fping6_location }}
 
-### REMOTE COMMANDS
-EnableRemoteCommands={{ zabbix_proxy_enable_remote_commands }}
-LogRemoteCommands={{ zabbix_proxy_log_remote_commands }}
-
 ### DATABASE COMPATIBILITY
 AllowUnsupportedDBVersions={{ zabbix_proxy_allow_unsupported_db }}
 
-### SSH KEYS
+### SSH KEYS (para checagens por SSH executadas pelo proxy)
 SSHKeyLocation={{ zabbix_proxy_ssh_key_location }}

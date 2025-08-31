@@ -116,10 +116,11 @@ zabbix_proxy_historycachesize: 64M
 zabbix_proxy_historyindexcachesize: 32M
 
 ### TLS
-zabbix_proxy_tls_connect: 1   # PSK
-zabbix_proxy_tls_accept: 2    # PSK
+zabbix_proxy_tls_connect: 1   # PSK (cliente -> server)
+zabbix_proxy_tls_accept: 1    # PSK (proxy aceita conexões PSK)
 zabbix_proxy_psk_identity: "{{ zabbix_proxy_hostname }}-psk"
 zabbix_proxy_psk_file: "/etc/zabbix/psk/{{ zabbix_proxy_hostname }}.psk"
+
 
 # nota 
 #Na API do Zabbix, os valores são inteiros:
