@@ -2,6 +2,7 @@
 # ==============================================================================
 # Tasks da Role 'network_security'
 # Arquivo: roles/net_security/tasks/main.yml
+# Descrição: Realiza a instalação e configuração de medidas de segurança de rede.
 # ==============================================================================
 
 # ──────────────────────────────────────────────────────────────────────────────

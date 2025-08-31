@@ -1,7 +1,8 @@
 # ==============================================================================
 # GT Monitoramento 2025
-# Tasks da Role 'zabbix_proxy' (Versão Refinada)
+# Tasks da Role 'zabbix_proxy' 
 # Arquivo: roles/zabbix_proxy/tasks/main.yml
+# Descrição: Realiza a instalação e configuração do Zabbix Proxy.
 # ==============================================================================
 ---
 # --- Repositório e Pacotes ---

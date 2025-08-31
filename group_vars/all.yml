@@ -6,9 +6,11 @@
 #             - net_security (roles/net_security)
 #             - zabbix_proxy (roles/zabbix_proxy)
 #             - zabbix_agent (roles/zabbix_agent)
+#             - zabbix_server_register_proxy (roles/zabbix_server_register_proxy)
+#             - zabbix_server_register_agent (roles/zabbix_server_register_agent)
 # Versão: 5.0
-# Data: 2025-08-27
-# Feito por: Felipe Anjos <felipe.anjos@pop-ce.rnp.br
+# Data: 2025-08-31
+# Feito por: GT de Monitoramento 2025
 # ==============================================================================
 
 # ==============================================================================
@@ -91,7 +93,7 @@ zabbix_validate_certs: false
 #  Administração → Tokens de API.
 # Ele substitui login/senha e deve ter permissões adequadas.
 # ----------------------------------------------------------------------
-zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd"
+zabbix_api_token: "1001461b05b80291e23945d00ec126ab8f147da858e09ea9c2cf6ed04fb87ddd" # necessário colocar num vault
 
 # Proxy: enviar PSK/Identity para o Server quando TLS=PSK?
 # - true  = envia PSK e Identity na chamada proxy.update via API.
@@ -292,7 +294,7 @@ zabbix_agent_plugins_docker_endpoint: "unix:///var/run/docker.sock"
 zabbix_agent_plugins_docker_timeout: 20
 
 # ==============================================================================
-# --- Seção V: Segurança ---
+# --- Seção V: Segurança --- | Ainda necessário verificar 
 # ==============================================================================
 # Role de execução: roles/network_security/tasks/main.yml
 # Templates relacionados:

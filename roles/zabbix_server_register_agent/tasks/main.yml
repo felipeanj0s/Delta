@@ -4,7 +4,7 @@
 # Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
 # ======================================================================
 ---
-# 0) Sanidade de variáveis
+# 0) Verificação de variáveis
 - name: Verificar variáveis obrigatórias do agente
   ansible.builtin.assert:
     that:
@@ -62,7 +62,7 @@
     agent_psk_key: "{{ (agent_psk.content | b64decode) | trim }}"
   no_log: true
 
-# 2.1) Criar/garantir hostgroups (idempotente)
+# 2.1) Criar/garantir hostgroups 
 - name: Garantir que hostgroups do agente existem
   vars:
     ansible_connection: httpapi

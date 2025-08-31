@@ -2,6 +2,7 @@
 # ==============================================================================
 # Task para a Role 'setup_context'
 # Arquivo: roles/setup_context/tasks/main.yml
+# Descrição: Garante que as variáveis sejam carregadas corretamente.
 # ==============================================================================
 - name: Setup | Determinar a localidade a partir do grupo do inventário
   ansible.builtin.set_fact:

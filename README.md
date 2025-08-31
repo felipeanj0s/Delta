@@ -130,18 +130,23 @@ O **servidor de destino** deve atender aos seguintes requisitos:
    ansible-playbook -i hosts prov_zbxproxy.yml --limit sigla_do_estado -K
    ```
 
+   Guia rápido do -v para debug:
 | Parâmetro | Descrição |
 | :--- | :--- |
 | `--limit <grupo>` | Executa apenas para o grupo especificado (ex: `ce`). |
-| `-K` | Solicita senha do `sudo`. |
-| `-v`, `-vvv` | Verbosidade extra para debug. |
+| `-K` | Solicita senha do `sudo` da VM. |
+| `-v` | Verbose / Detalhado |
+| `-vv` | Very Verbose / Muito Detalhado |
+| `-vvv` | Verbosidade extra para debug. |
+| `-vvvv` | Debug Maximo |
 
 ---
 
 <a id="configuracao-detalhada"></a>
 ## 🔧 Configuração Detalhada
 
-A personalização do provisionamento é feita em dois níveis: **variáveis globais** que se aplicam a todos os proxies e **variáveis locais** específicas para cada Ponto de Presença (POP). Não é recomendado alterar as variáveis globais, pois estes valores foram parâmetrizados pela GER/Backbone para compatibilidade com o Zabbix Server Central.
+A personalização do provisionamento é feita em dois níveis: **variáveis globais** que se aplicam a todos os proxies e **variáveis locais** específicas para cada Ponto de Presença (POP). 
+Não é recomendado alterar as variáveis globais, pois estes valores foram parâmetrizados pela GER/Backbone para compatibilidade com o Zabbix Server Central.
 
 
 #### 1\. Configurações Locais (Específicas do POP)

@@ -1,8 +1,7 @@
 # ======================================================================
 # GT Monitoramento 2025
 # roles/zabbix_server_register_proxy/tasks/main.yml
-# Registra/atualiza Proxy no Zabbix Server via API (HTTP/HTTPS)
-# Compatível com Zabbix 7.2.12
+# Descrição: Registra o Proxy no Zabbix Server.
 # ======================================================================
 ---
 # 0) Base da API: usa a URL completa se houver; senão monta pelos componentes

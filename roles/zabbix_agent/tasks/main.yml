@@ -1,6 +1,7 @@
 # ==============================================================================
 # Tasks da Role 'zabbix_agent' 
 # Arquivo: roles/zabbix_agent/tasks/main.yml
+# Descrição: Realiza a instalação e configuração do Zabbix Agent 2.
 # ==============================================================================
 ---
 # --- Instalação do Zabbix Agent 2 ---
