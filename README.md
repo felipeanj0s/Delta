@@ -48,11 +48,9 @@ graph TD;
     end
 
     subgraph "Ambiente do PoP"
-        direction LR
-        Operador(["👤<br>Operador"]);
+        Operador(["👤<br>Operador do PoP"]);
 
         subgraph "VM Host de Destino"
-            direction TD
             A("1. git clone & cd");
             B("2. ansible-playbook prov_zbxproxy.yml");
             C{"3. Roles aplicam configurações<br>Rede, Segurança, Zabbix"};
@@ -61,10 +59,10 @@ graph TD;
             A --> B --> C --> D;
         end
 
-        Operador -- "Acessa via SSH" --> A;
+        Operador -- "Acessa a VM via SSH" --> A;
     end
     
-    D -- "Comunicação TLS/PSK<br>(Portas 10051 e 10050)" --> ZabbixServer;
+    D -- "Comunicação TLS/PSK" --> ZabbixServer;
 ```
 
 ## 🧩 Estrutura das Roles
