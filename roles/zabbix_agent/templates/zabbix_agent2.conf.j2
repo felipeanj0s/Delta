@@ -8,8 +8,7 @@ SourceIP={{ zabbix_agent_source_ip }}
 
 ### PASSIVE CHECKS
 ListenPort={{ zabbix_agent_listenport }}
-# Permite o Server e também 127.0.0.1 para testes locais
-Server={{ ([zabbix_server_ip, '127.0.0.1'] | unique) | join(',') }}
+Server={{ zabbix_server_ip }}
 
 ### ACTIVE CHECKS
 ServerActive={{ zabbix_agent_serveractive_list | join(',') }}

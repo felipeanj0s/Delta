@@ -1,31 +1,35 @@
-# roles/zabbix_server_register_agent/tasks/main.yml
+# ======================================================================
+# GT Monitoramento 2025
+# Arquivo: roles/zabbix_server_register_agent/tasks/main.yml
+# Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
+# ======================================================================
 ---
-# 0) Ler PSK local e validar
-- name: Registro do Agente | Ler a PSK do arquivo
+
+# 0) PSK local (arquivo do agente) -> memória
+- name: Agent | Ler PSK do arquivo
   ansible.builtin.slurp:
     src: "{{ zabbix_agent_psk_file }}"
-  register: agent_psk_file_content
+  register: agent_psk_file
 
-- name: Registro do Agente | Definir fato com o valor da PSK
+- name: Agent | Definir/validar PSK (64 hex)
   ansible.builtin.set_fact:
-    agent_psk_key: "{{ (agent_psk_file_content.content | b64decode) | trim }}"
-
-- name: Sanity | Validar PSK (64 hex)
+    agent_psk_key: "{{ (agent_psk_file.content | b64decode) | trim }}"
+- name: Agent | Sanity PSK
   ansible.builtin.assert:
     that:
       - agent_psk_key is match('^[0-9a-fA-F]{64}$')
-    fail_msg: "PSK do agente inválida. Esperado 64 hex em {{ zabbix_agent_psk_file }}."
+    fail_msg: "PSK do agente inválida: esperados 64 hex em {{ zabbix_agent_psk_file }}."
 
-# 1) Headers
-- name: API | Definir headers padrão com Bearer token
+# 1) Headers (Bearer)
+- name: API | Headers (Bearer)
   ansible.builtin.set_fact:
     zbx_headers:
       Content-Type: "application/json-rpc"
       Authorization: "Bearer {{ zabbix_api_token }}"
   no_log: true
 
-# 2) proxy.get (por nome)
-- name: API | Obter ID do Proxy que irá monitorar o agente
+# 2) proxy.get (pega proxy_hostid pelo nome do proxy)
+- name: API | proxy.get (por nome)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -38,13 +42,19 @@
         filter:
           name: ["{{ zabbix_proxy_hostname }}"]
       id: 1
+    # validate_certs: no
+    follow_redirects: all
+  register: zbx_proxy_get
+  failed_when: zbx_proxy_get.json.error is defined
   delegate_to: localhost
   run_once: true
-  register: proxy_get_response
-  failed_when: proxy_get_response.json.error is defined
 
-# 3) hostgroup.get
-- name: API | Obter IDs dos Grupos de Hosts
+- name: Fatos | proxyid
+  ansible.builtin.set_fact:
+    agent_proxy_id: "{{ zbx_proxy_get.json.result | map(attribute='proxyid') | first | default('') }}"
+
+# 3) hostgroup.get (por nomes) -> lista de dicts {groupid: "..."}
+- name: API | hostgroup.get
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -57,13 +67,23 @@
         filter:
           name: "{{ zabbix_agent_hostgroups }}"
       id: 2
+    follow_redirects: all
+  register: zbx_groups_get
+  failed_when: zbx_groups_get.json.error is defined
   delegate_to: localhost
   run_once: true
-  register: hostgroup_get_response
-  failed_when: hostgroup_get_response.json.error is defined
 
-# 4) template.get
-- name: API | Obter IDs dos Templates
+- name: Fatos | Montar groups [{groupid: ...}]
+  ansible.builtin.set_fact:
+    _group_ids: "{{ zbx_groups_get.json.result | map(attribute='groupid') | list }}"
+    agent_groups: []
+- name: Fatos | Push group objects
+  ansible.builtin.set_fact:
+    agent_groups: "{{ agent_groups + [ {'groupid': item} ] }}"
+  loop: "{{ _group_ids }}"
+
+# 4) template.get (por nomes) -> lista de dicts {templateid: "..."}
+- name: API | template.get
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -76,13 +96,23 @@
         filter:
           host: "{{ zabbix_agent_templates }}"
       id: 3
+    follow_redirects: all
+  register: zbx_tpl_get
+  failed_when: zbx_tpl_get.json.error is defined
   delegate_to: localhost
   run_once: true
-  register: template_get_response
-  failed_when: template_get_response.json.error is defined
 
-# 5) host.get
-- name: API | Verificar se o Host do Agente já existe
+- name: Fatos | Montar templates [{templateid: ...}]
+  ansible.builtin.set_fact:
+    _tpl_ids: "{{ zbx_tpl_get.json.result | map(attribute='templateid') | list }}"
+    agent_templates: []
+- name: Fatos | Push template objects
+  ansible.builtin.set_fact:
+    agent_templates: "{{ agent_templates + [ {'templateid': item} ] }}"
+  loop: "{{ _tpl_ids }}"
+
+# 5) host.get (por host técnico)
+- name: API | host.get (verificar existência)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -97,13 +127,19 @@
         filter:
           host: ["{{ zabbix_agent_hostname }}"]
       id: 4
+    follow_redirects: all
+  register: zbx_host_get
+  failed_when: zbx_host_get.json.error is defined
   delegate_to: localhost
   run_once: true
-  register: host_get_response
-  failed_when: host_get_response.json.error is defined
 
-# 6) host.create (inclui identity e psk AQUI)
-- name: API | Criar o Host do Agente (se não existir)
+- name: Fatos | hostid/exists
+  ansible.builtin.set_fact:
+    agent_host_exists: "{{ (zbx_host_get.json.result | default([])) | length > 0 }}"
+    agent_host_id: "{{ zbx_host_get.json.result | map(attribute='hostid') | first | default('') }}"
+
+# 6) host.create (inclui identity/psk AQUI)
+- name: API | host.create (se não existir)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -114,36 +150,30 @@
       method: "host.create"
       params:
         host: "{{ zabbix_agent_hostname }}"
-        proxy_hostid: "{{ proxy_get_response.json.result[0].proxyid }}"
+        proxy_hostid: "{{ agent_proxy_id }}"
         interfaces:
-          - type: 1
+          - type: 1           # agent
             main: 1
             useip: 1
             ip: "{{ zabbix_agent_source_ip }}"
             dns: ""
             port: "10050"
-        groups: "{{ hostgroup_get_response.json.result
-                    | map(attribute='groupid')
-                    | map('community.general.dict_kv', 'groupid')
-                    | list }}"
-        templates: "{{ template_get_response.json.result
-                      | map(attribute='templateid')
-                      | map('community.general.dict_kv', 'templateid')
-                      | list }}"
-        # PSK/Identity apenas no create
+        groups: "{{ agent_groups }}"
+        templates: "{{ agent_templates }}"
         tls_connect: 1
         tls_accept: 1
         tls_psk_identity: "{{ zabbix_agent_psk_identity }}"
         tls_psk: "{{ agent_psk_key }}"
       id: 5
+    follow_redirects: all
+  when: not agent_host_exists
+  register: zbx_host_create
+  failed_when: zbx_host_create.json.error is defined
   delegate_to: localhost
   run_once: true
-  when: (host_get_response.json.result | default([])) | length == 0
-  register: host_create_response
-  failed_when: host_create_response.json.error is defined
 
-# 7) host.update (NÃO enviar identity/psk)
-- name: API | Atualizar o Host do Agente (se já existir)
+# 7) host.update (NÃO reenvia identity/psk)
+- name: API | host.update (se existir)
   ansible.builtin.uri:
     url: "{{ zabbix_server_url }}/api_jsonrpc.php"
     method: POST
@@ -153,21 +183,24 @@
       jsonrpc: "2.0"
       method: "host.update"
       params:
-        hostid: "{{ host_get_response.json.result[0].hostid }}"
-        proxy_hostid: "{{ proxy_get_response.json.result[0].proxyid }}"
-        groups: "{{ hostgroup_get_response.json.result
-                    | map(attribute='groupid')
-                    | map('community.general.dict_kv', 'groupid')
-                    | list }}"
-        templates: "{{ template_get_response.json.result
-                      | map(attribute='templateid')
-                      | map('community.general.dict_kv', 'templateid')
-                      | list }}"
+        hostid: "{{ agent_host_id }}"
+        proxy_hostid: "{{ agent_proxy_id }}"
+        groups: "{{ agent_groups }}"
+        templates: "{{ agent_templates }}"
         tls_connect: 1
         tls_accept: 1
       id: 6
+    follow_redirects: all
+  when: agent_host_exists
+  register: zbx_host_update
+  failed_when: zbx_host_update.json.error is defined
   delegate_to: localhost
   run_once: true
-  when: (host_get_response.json.result | default([])) | length > 0
-  register: host_update_response
-  failed_when: host_update_response.json.error is defined
+
+# 8) Mensagem final
+- name: Final | Resultado
+  ansible.builtin.debug:
+    msg: >-
+      Host '{{ zabbix_agent_hostname }}' {{
+        (agent_host_exists | ternary('atualizado', 'criado'))
+      }} com proxy '{{ zabbix_proxy_hostname }}' e TLS PSK via API.
