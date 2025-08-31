@@ -53,7 +53,7 @@ graph TD;
         subgraph "VM Host de Destino"
             A("1. git clone & cd");
             B("2. ansible-playbook prov_zbxproxy.yml");
-            C{"3. Roles aplicam configurações<br>Rede, Segurança, Zabbix"};
+            C{"3. Roles aplicam configurações de <br>Rede, Segurança, Zabbix Proxy e Agent2"};
             D["✅<br>Proxy e Agent<br>Instalados e Rodando"];
             
             A --> B --> C --> D;
