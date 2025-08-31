@@ -2,21 +2,22 @@
 
 ## 📜 Sumário
 
-- [Visão Geral](#visao-geral)  
-- [Principais Funcionalidades](#principais-funcionalidades)  
-- [Arquitetura de Execução](#arquitetura-de-execucao)  
-- [Estrutura das Roles](#estrutura-das-roles)  
-- [Começando](#comecando)  
-  - [Pré-requisitos](#pre-requisitos)  
-  - [Workflow de Provisionamento](#workflow-de-provisionamento)  
-- [Configuração Detalhada](#configuracao-detalhada)  
-- [Solução de Problemas](#solucao-de-problemas)  
-- [Limitações e Observações](#limitacoes-e-observacoes)  
-- [Autores](#autores)  
+- [Visão Geral](#visao-geral)
+- [Principais Funcionalidades](#principais-funcionalidades)
+- [Arquitetura de Execução](#arquitetura-de-execucao)
+- [Estrutura das Roles](#estrutura-das-roles)
+- [Começando](#comecando)
+  - [Pré-requisitos](#pre-requisitos)
+  - [Workflow de Provisionamento](#workflow-de-provisionamento)
+- [Configuração Detalhada](#configuracao-detalhada)
+- [Solução de Problemas](#solucao-de-problemas)
+- [Limitações e Observações](#limitacoes-e-observacoes)
+- [Autores](#autores)
 
 ---
 
-## 📖 Visão Geral {#visao-geral}
+<a id="visao-geral"></a>
+## 📖 Visão Geral
 
 O projeto automatiza, via **Ansible**, a implantação e configuração completa de um **Zabbix Proxy** em servidores **Debian 12 (Bookworm)**.  
 A automação é executada **localmente no host de destino** e inclui:
@@ -30,7 +31,8 @@ O objetivo é fornecer um método rápido, seguro e replicável para implantar n
 
 ---
 
-## ✨ Principais Funcionalidades {#principais-funcionalidades}
+<a id="principais-funcionalidades"></a>
+## ✨ Principais Funcionalidades
 
 - 🚀 **Execução Local:** O playbook roda no próprio servidor de destino, simplificando o processo.  
 - 🔄 **Automação de Ponta a Ponta:** Desde a rede e segurança até a instalação e registro dos serviços Zabbix.  
@@ -41,7 +43,8 @@ O objetivo é fornecer um método rápido, seguro e replicável para implantar n
 
 ---
 
-## 🏛️ Arquitetura de Execução {#arquitetura-de-execucao}
+<a id="arquitetura-de-execucao"></a>
+## 🏛️ Arquitetura de Execução
 
 A automação acontece inteiramente no Host de Destino. Um operador acessa o servidor, clona o repositório e executa o playbook, que configura a máquina localmente.  
 A única comunicação externa é com a API e os trappers do Zabbix Server.  
@@ -72,7 +75,8 @@ graph TD;
 
 ---
 
-## 🧩 Estrutura das Roles {#estrutura-das-roles}
+<a id="estrutura-das-roles"></a>
+## 🧩 Estrutura das Roles
 
 | Role | Descrição |
 | :--- | :--- |
@@ -85,9 +89,11 @@ graph TD;
 
 ---
 
-## 🚀 Começando {#comecando}
+<a id="comecando"></a>
+## 🚀 Começando
 
-### ✅ Pré-requisitos {#pre-requisitos}
+<a id="pre-requisitos"></a>
+### ✅ Pré-requisitos
 
 O **servidor de destino** deve atender aos seguintes requisitos:
 
@@ -107,7 +113,8 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 ---
 
-### ⚙️ Workflow de Provisionamento {#workflow-de-provisionamento}
+<a id="workflow-de-provisionamento"></a>
+### ⚙️ Workflow de Provisionamento
 
 1. **Clonar o Repositório**  
    ```bash
@@ -131,7 +138,8 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 ---
 
-## 🔧 Configuração Detalhada {#configuracao-detalhada}
+<a id="configuracao-detalhada"></a>
+## 🔧 Configuração Detalhada
 
 1. **Globais (Zabbix Server):**  
    Editar `group_vars/all.yml`:  
@@ -151,7 +159,8 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 ---
 
-## 💡 Solução de Problemas {#solucao-de-problemas}
+<a id="solucao-de-problemas"></a>
+## 💡 Solução de Problemas
 
 | Sintoma | Diagnóstico | Solução |
 | :--- | :--- | :--- |
@@ -161,13 +170,15 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 ---
 
-## ⚠️ Limitações e Observações {#limitacoes-e-observacoes}
+<a id="limitacoes-e-observacoes"></a>
+## ⚠️ Limitações e Observações
 
 - A API do Zabbix não permite associar IP/DNS ao Proxy durante a criação (`proxy.create`).  
 - Após rodar a automação, edite manualmente o **endereço do proxy** via UI em `Administração > Proxies`.  
 
 ---
 
-## 👨‍💻 Autores {#autores}
+<a id="autores"></a>
+## 👨‍💻 Autores
 
 - **GT Monitoramento 2025**
