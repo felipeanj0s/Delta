@@ -123,7 +123,7 @@ O **servidor de destino** deve atender aos seguintes requisitos:
    ```
 
 2. **Configurar Variáveis**  
-   Ajuste os arquivos em `group_vars/` conforme seu ambiente. Veja a seção [Configuração Detalhada](#configuracao-detalhada).  
+   Ajuste os arquivos em `group_vars/pop_configs/sigla_do_estado.yml` conforme seu ambiente. Veja a seção [Configuração Detalhada](#configuracao-detalhada).  
 
 3. **Executar o Playbook**  
    ```bash
@@ -140,22 +140,56 @@ O **servidor de destino** deve atender aos seguintes requisitos:
 
 <a id="configuracao-detalhada"></a>
 ## 🔧 Configuração Detalhada
+Com certeza\! Desenvolvi a seção de configuração a partir do seu resumo, adicionando mais detalhes, explicações e exemplos para deixar o `README` ainda mais claro e fácil de usar para qualquer pessoa que for executar o projeto.
 
-1. **Globais (Zabbix Server):**  
-   Editar `group_vars/all.yml`:  
-   - `zabbix_server_ip`  
-   - `zabbix_server_url`  
-   - `zabbix_api_token`  
+Aqui está a seção reescrita:
 
-2. **Locais (Proxy):**  
-   Criar/editar `group_vars/pops_configs/ce.yml` (exemplo):  
-   - Parâmetros de rede  
-   - `zabbix_proxy_hostname`  
+-----
 
-3. **Segurança:**  
-   - Tire **snapshot** da VM antes.  
-   - Porta SSH será alterada → confira `ssh_port`.  
-   - UFW bloqueará IPs não autorizados → verifique gateway e IP de acesso.  
+\<a id="configuracao-detalhada"\>\</a\>
+
+## 🔧 Configuração Detalhada
+
+A personalização do provisionamento é feita em dois níveis: **variáveis globais** que se aplicam a todos os proxies e **variáveis locais** específicas para cada Ponto de Presença (POP). Não é recomendado alterar as variáveis globais, pois estes valores foram parâmetrizados pela GER/Backbone para compatibilidade com o Zabbix Server Central.
+
+
+#### 1\. Configurações Locais (Específicas do POP)
+
+Estas variáveis definem a identidade e a configuração de rede de um proxy específico.
+
+**Diretório:** `group_vars/pops_configs/sigla_do_estado.yml`
+
+O nome do arquivo YAML nesta pasta **deve ser idêntico** ao nome do grupo definido no inventário (`hosts`). É essa convenção que permite ao Ansible carregar as configurações corretas para a localidade desejada.
+
+**Exemplo:** Para o grupo `[ce]` no inventário, edite o arquivo `group_vars/pops_configs/ce.yml`.
+
+As variáveis essenciais a serem configuradas são:
+
+  * **`zabbix_proxy_hostname`**: O nome de host único para este proxy. Este nome será usado tanto no arquivo de configuração local quanto no registro no Zabbix Server.
+    ```yaml
+    zabbix_proxy_hostname: "ce-zabbix-rnp-ger-proxy01"
+    ```
+  * **Parâmetros de Rede**: Configure a interface de rede, endereços IP, gateway e DNS para a máquina.
+    ```yaml
+    pop_network_ipv4_address: "192.168.0.17/24"
+    pop_network_ipv4_gateway: "192.168.0.9"
+    pop_network_dns_list:
+      - "200.19.16.53" # dns rnp
+     -  "200.137.53.53" # dns rnp
+
+    ```
+  * **Porta SSH**: A porta customizada para o acesso SSH, que será configurada no firewall.
+    ```yaml
+    ssh_port: 25085
+    ```
+
+#### 2\. Recomendações Críticas de Segurança e Operação
+
+  - **📸 Snapshot da VM:** Antes de executar o playbook pela primeira vez, é uma prática de segurança **altamente recomendada** criar um snapshot. Isso garante um ponto de retorno instantâneo caso alguma configuração de rede ou firewall bloqueie seu acesso.
+
+  - **🔒 Acesso SSH:** A automação **altera a porta padrão do SSH** para o valor definido em `ssh_port` na variável local do POP. Após a execução, você só conseguirá acessar a máquina através da nova porta.
+
+  - **🧱 Firewall (UFW):** O UFW é ativado e configurado para bloquear todas as conexões, exceto as permitidas (SSH, Zabbix). Certifique-se de que o IP do seu gateway (`pop_network_ipv4_gateway`) ou o IP da sua máquina de acesso esteja na lista de permissões para não ser bloqueado.
 
 ---
 
