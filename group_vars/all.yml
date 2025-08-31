@@ -283,8 +283,8 @@ zabbix_agent_control_socket: "/tmp/agent.sock"
 ### TLS
 zabbix_agent_tls_connect: "psk"
 zabbix_agent_tls_accept: "psk"
-zabbix_agent_psk_identity: "zabbix-rnp-ger-agent-psk"
-zabbix_agent_psk_file: "/etc/zabbix/psk/ce-zabbix-rnp-ger-agent.psk"
+zabbix_agent_psk_identity: "{{ zabbix_agent_hostname }}-psk-agent"
+zabbix_agent_psk_file: "/etc/zabbix/psk/{{ zabbix_agent_hostname }}-agent.psk"
 
 ### PLUGINS
 zabbix_agent_plugins_log_max_lines: 20

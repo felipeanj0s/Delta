@@ -79,7 +79,6 @@
       - "{{ item }}"
   loop: "{{ zabbix_agent_hostgroups }}"
 
-
 # 3) Registrar/atualizar host no Zabbix via httpapi
 - name: Registrar/atualizar host do agente no Zabbix
   vars:
@@ -98,8 +97,8 @@
     visible_name: "{{ zabbix_agent_hostname }}"
     host_groups: "{{ zabbix_agent_hostgroups }}"
     link_templates: "{{ zabbix_agent_templates }}"
-    monitored_by: proxy
-    proxy: "{{ zabbix_proxy_hostname }}"
+    # As linhas 'monitored_by' e 'proxy' foram removidas.
+    # O agente no host do proxy deve ser monitorado diretamente pelo Zabbix Server.
     interfaces:
       - type: agent
         main: 1

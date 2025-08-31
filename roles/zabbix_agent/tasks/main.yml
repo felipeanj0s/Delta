@@ -1,9 +1,8 @@
----
 # ==============================================================================
 # Tasks da Role 'zabbix_agent' 
 # Arquivo: roles/zabbix_agent/tasks/main.yml
 # ==============================================================================
-
+---
 # --- Instalação do Zabbix Agent 2 ---
 - name: Instalar Zabbix Agent2
   ansible.builtin.apt:
@@ -44,7 +43,9 @@
 
 - name: Criar arquivo PSK com permissões seguras
   ansible.builtin.copy:
-    content: "{{ agent_psk_value.stdout }}"
+    # Adicionado | trim para remover a quebra de linha no final da chave gerada pelo openssl.
+    # Isso garante que a chave no arquivo seja idêntica à enviada para a API.
+    content: "{{ agent_psk_value.stdout | trim }}"
     dest: "{{ zabbix_agent_psk_file }}"
     owner: zabbix
     group: zabbix
