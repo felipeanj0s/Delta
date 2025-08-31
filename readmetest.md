@@ -182,25 +182,51 @@ Ex:
    ```bash
    ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K -v
    ```
-
 ---
+<a id="resultados-esperados"></a>
 
-## Solução de Problemas
+## ✅ Resultados Esperados
 
-| Sintoma                      | Diagnóstico                         | Ação sugerida                                                                       |
-| ---------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
-| Proxy não inicia             | `systemctl status zabbix-proxy`     | Verifique `ServerPort`, diretórios e permissões                                     |
-| Erro TLS no Agent            | `/var/log/zabbix/zabbix_agent2.log` | Confirme **PSK** (identity/key) e limpe cache no Server                             |
-| Host do Agent “Desconhecido” | Checar configuração na UI           | O host do **Agent 2** do proxy deve ser monitorado pelo **Server** (não pelo proxy) |
+Após a execução bem-sucedida do playbook, a configuração no Zabbix Server deve se apresentar da seguinte forma. Esta seção serve como um guia visual para confirmar que tudo funcionou corretamente.
 
-> Após o provisionamento, valide na UI do Zabbix:
-> **Administração → Proxies** (ativo, PSK, online, “última vez visto” recente) e **Monitoramento → Hosts** (ZBX verde para o host). 
+### 1. Status do Proxy
+
+Navegue até **Administração -> Proxies** na interface do Zabbix.
+
+Você deverá encontrar o proxy recém-criado com as seguintes características:
+-   **Modo:** Ativo
+-   **Encriptação:** PSK
+-   **Estado:** Online
+-   **Última vez visto (idade):** Um valor baixo, como "alguns segundos", indicando comunicação ativa e recente com o Zabbix Server.
+
+*![alt text](/imagens/image-2.png)*
+
+*![alt text](/imagens/image.png)*
+
+*![alt text](/imagens/image-1.png)*
+
+### 2. Status do Host (Agente)
+
+Navegue até **Monitoramento -> Hosts**.
+
+Você deverá encontrar o host correspondente ao agente do proxy com os seguintes indicadores:
+-   O nome do host (ex: `ce-zabbix-rnp-ger-proxy01`) estará na lista.
+-   A coluna **Disponibilidade** mostrará um **ícone ZBX verde**, confirmando que o Zabbix Server está conseguindo coletar dados do agente via TLS/PSK.
+-   Ao clicar no host para editar, a opção **Monitorado por** estará corretamente marcada como **Servidor**.
+
+*![alt text](/imagens/image-3.png)*
+
+*![alt text](/imagens/image-4.png)*
+
+*![alt text](/imagens/image-5.png)*
+
+
 
 ---
 
 ## Limitações/Observações
 
-* A API do Zabbix não associa IP/DNS ao Proxy na criação; ajuste **manualmente** na UI após o primeiro registro (**Administração → Proxies**). ([GitHub][1])
+* A API do Zabbix não associa IP/DNS ao Proxy na criação; ajuste **manualmente** na UI após o primeiro registro (**Administração → Proxies**).
 * Este projeto foi pensado para execução **local** no host alvo (sem “control node” central).
 * Certifique-se de manter as **variáveis globais** alinhadas às diretrizes da sua GER/Backbone quando existirem.
 
@@ -214,11 +240,9 @@ Sim. O play é **idempotente** e deve convergir para o estado desejado.
 **Preciso abrir portas no firewall?**
 A role de segurança já libera **SSH** (na porta configurada) e portas do **Zabbix**. Ajustes extras podem ser feitos nas variáveis do POP.
 
-**Onde coloco Token/PSK?**
-No arquivo `group_vars/pops_configs/<sigla>.yml` (ou em **vault**). Evite commitar segredos em texto puro.
-
-**E se eu quiser SQLite vs. MySQL?**
-O exemplo utiliza `zabbix-proxy-sqlite3`. Se for usar outra variante, alinhe as variáveis/templates da role `zabbix_proxy`.
+**E se eu quiser MySQL ou outra SGBD?**
+O código não irá funcionar. A padronização do uso do `zabbix-proxy-sqlite3` é devido a construção automática do banco de dados. Caso
+utilize um SBGD diferente, o banco de dados precisa ser criado manualmente.
 
 ---
 
