@@ -146,6 +146,11 @@ pop_network_dns_list:
   - "200.19.16.53"
   - "200.137.53.53"
 
+zabbix_agent_hostgroups:
+  - "Linux servers"
+  - "Zabbix proxies"
+  - "POP-XX"     # Altere de acordo com seu PoP para criar um grupo no Zabbix Server Central automaticamente.  
+
 # Porta customizável para acesso ssh da VM
 ssh_port: 25085
 
