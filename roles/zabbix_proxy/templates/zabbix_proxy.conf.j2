@@ -6,7 +6,7 @@
 
 ### PROXY MODE
 # 0 = ativo, 1 = passivo
-ProxyMode=0
+ProxyMode={{ zabbix_proxy_mode | default(0) }}
 
 ### PROXY SERVICE
 Hostname={{ zabbix_proxy_hostname }}

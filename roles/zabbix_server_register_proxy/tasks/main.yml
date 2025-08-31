@@ -2,37 +2,37 @@
 # GT Monitoramento 2025
 # roles/zabbix_server_register_proxy/tasks/main.yml
 # Registra/atualiza Proxy no Zabbix Server via API (HTTP/HTTPS)
+# Compatível com Zabbix 7.2.12
 # ======================================================================
 ---
 # 0) Base da API: usa a URL completa se houver; senão monta pelos componentes
-- name: Definir preferência de URL (A: completa)
+
+- name: Definir preferencia de URL (A = completa)
   ansible.builtin.set_fact:
     _zbx_url_pref: "{{ (zabbix_server_url | default('')) | string | trim }}"
 
-- name: Montar URL base a partir de componentes (B), se não houver URL completa
+- name: Montar URL base (A) a partir da URL completa
+  ansible.builtin.set_fact:
+    _zbx_base_url: "{{ _zbx_url_pref | regex_replace('/+$','') }}"
+  when: _zbx_url_pref | length > 0
+
+- name: Montar URL base (B) a partir de componentes
   ansible.builtin.set_fact:
     _zbx_scheme: "{{ (zabbix_server_use_https | default(false) | bool) | ternary('https','http') }}"
     _zbx_port: >-
       {{
         ((zabbix_server_port | default('')) | string | trim | length) > 0
-        | ternary((zabbix_server_port | int), (zabbix_server_use_https | default(false) | bool | ternary(443,80)))
+          | ternary((zabbix_server_port | int), (zabbix_server_use_https | default(false) | bool | ternary(443,80)))
       }}
     _zbx_path: "{{ (zabbix_server_path | default('zabbix')) | trim('/') }}"
+    _zbx_base_url: "{{ _zbx_scheme ~ '://' ~ zabbix_server_host ~ ':' ~ _zbx_port ~ '/' ~ _zbx_path }}"
   when: _zbx_url_pref | length == 0
 
-- name: Definir URL base final e endpoint da API
+- name: Definir endpoint da API
   ansible.builtin.set_fact:
-    _zbx_base_url: >-
-      {{
-        (_zbx_url_pref | length > 0)
-          | ternary(
-              (_zbx_url_pref | regex_replace('/+$','')),
-              (_zbx_scheme ~ '://' ~ zabbix_server_host ~ ':' ~ _zbx_port ~ '/' ~ _zbx_path)
-            )
-      }}
     zbx_api_url: "{{ _zbx_base_url ~ '/api_jsonrpc.php' }}"
 
-# 0.1) Ler PSK local do proxy para alinhar no Server somente quando TLS=PSK e flag ligada
+# 0.1) Ler PSK local do proxy para alinhar no Server apenas quando TLS=PSK e flag ligada
 - name: Ler PSK do proxy (condicional)
   ansible.builtin.slurp:
     src: "{{ zabbix_proxy_psk_file }}"
@@ -40,15 +40,16 @@
   no_log: true
   when:
     - zabbix_register_proxy_psk_to_server | default(true) | bool
-    - (zabbix_proxy_tls_connect | int) == 1 or (zabbix_proxy_tls_accept | int) % 2 == 1
+    # <-- CORRIGIDO: A leitura do PSK deve ocorrer se o servidor for configurado para ACEITAR PSK.
+    - (zabbix_proxy_tls_accept | int) == 2
 
-- name: PSK em memória (64 hex)
+- name: Definir PSK em memoria (64 hex)
   ansible.builtin.set_fact:
     zbx_proxy_psk_value: "{{ (proxy_psk_read.content | b64decode) | trim }}"
   no_log: true
   when: proxy_psk_read is defined and proxy_psk_read.content is defined
 
-# 1) Verificar se o proxy já existe
+# 1) Verificar se o proxy ja existe
 - name: API | proxy.get (por nome)
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"
@@ -69,7 +70,8 @@
           - operating_mode
           - tls_connect
           - tls_accept
-          - tls_psk_identity
+          - state         # opcional, só informativo
+          - lastaccess    # opcional, só informativo
       id: 1
     follow_redirects: all
     validate_certs: "{{ zabbix_validate_certs | default(false) }}"
@@ -85,10 +87,9 @@
     zbx_mode_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='operating_mode') | first | default(omit) }}"
     zbx_tls_conn_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_connect') | first | default(omit) }}"
     zbx_tls_acc_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_accept') | first | default(omit) }}"
-    zbx_tls_id_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_psk_identity') | first | default('') }}"
 
-# 2) Criar (mínimo)
-- name: API | proxy.create (mínimo)
+# 2) Criar (minimo)
+- name: API | proxy.create (minimo)
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"
     method: POST
@@ -118,8 +119,8 @@
     zbx_proxy_id: "{{ zbx_proxy_create.json.result.proxyids[0] }}"
   when: not zbx_proxy_exists
 
-# 4) Precisa atualizar modo/TLS/PSK?
-- name: Precisa atualizar modo/TLS/PSK?
+# 4) Precisa atualizar modo/TLS?
+- name: Precisa atualizar modo/TLS?
   ansible.builtin.set_fact:
     zbx_needs_update: >-
       {{
@@ -127,16 +128,13 @@
           (zbx_proxy_exists and (
             (zbx_mode_cur | int)     != (zabbix_proxy_mode | int) or
             (zbx_tls_conn_cur | int) != (zabbix_proxy_tls_connect | int) or
-            (zbx_tls_acc_cur  | int) != (zabbix_proxy_tls_accept  | int) or
-            (
-              (zabbix_proxy_tls_connect | int) == 1 and
-              (zabbix_proxy_psk_identity | default('')) | string != (zbx_tls_id_cur | string)
-            )
-          )) or (not zbx_proxy_exists)
+            (zbx_tls_acc_cur  | int) != (zabbix_proxy_tls_accept  | int)
+          ))
+          or (not zbx_proxy_exists)
         )
       }}
 
-# 5) Atualizar (modo/TLS) e, se aplicável, PSK/identity
+# 5) Atualizar (modo/TLS) e, se aplicavel, PSK/identity
 - name: API | proxy.update (modo/TLS/PSK)
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"
@@ -160,7 +158,8 @@
           combine(
             (
               zabbix_register_proxy_psk_to_server | default(true) | bool and
-              (zabbix_proxy_tls_connect | int) == 1 and
+              # <-- CORRIGIDO: Enviar PSK se o modo de ACEITAÇÃO for PSK (valor 2).
+              (zabbix_proxy_tls_accept | int) == 2 and
               (zabbix_proxy_psk_identity | default('')) | length > 0 and
               (zbx_proxy_psk_value | default('')) | length > 0
             )
@@ -186,4 +185,4 @@
       Proxy '{{ zabbix_proxy_hostname }}' {{
         (not zbx_proxy_exists) | ternary('criado',
         (zbx_needs_update | ternary('atualizado','verificado')))
-      }} via API. TLS={{ (zabbix_proxy_tls_connect | int) == 1 | ternary('PSK','Nenhum/Outro') }}.
+      }} via API. TLS={{ (zabbix_proxy_tls_accept | int) == 2 | ternary('PSK','Nenhum/Outro') }}.
