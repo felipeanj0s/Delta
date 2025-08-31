@@ -76,7 +76,7 @@ dev-zbx/
 ├─ hosts                      # Inventário Ansible (grupos por POP)
 ├─ group_vars/
 │  ├─ pops_configs/           # Variáveis específicas por POP (ex.: ce.yml, rj.yml, ...)
-│  └─ (variáveis globais, se aplicável)
+│  └─ all.yml                 # Variáveis globais utilizadas em todas as roles
 ├─ roles/
 │  ├─ setup_context/          # Descobre contexto do grupo e carrega variáveis
 │  ├─ net_security/           # Hostname, netplan, UFW, Fail2Ban, SSH (hardening)
@@ -86,7 +86,7 @@ dev-zbx/
 │  └─ zabbix_server_register_agent/  # Chama API p/ criar/atualizar Host (Agent2)
 ```
 
-> Os nomes e a divisão das roles seguem o que o próprio projeto descreve: **setup\_context, net\_security, zabbix\_proxy, zabbix\_agent, zabbix\_server\_register\_proxy e zabbix\_server\_register\_agent**. ([GitHub][1])
+> Os nomes e a divisão das roles seguem o que o próprio projeto descreve: **setup\_context, net\_security, zabbix\_proxy, zabbix\_agent, zabbix\_server\_register\_proxy e zabbix\_server\_register\_agent**. 
 
 ---
 
@@ -103,9 +103,9 @@ ansible-galaxy collection install community.general
 Versões Zabbix já validadas no projeto (ajuste se necessário):
 
 * `zabbix-proxy-sqlite3=1:7.2.7-1+debian12`
-* `zabbix-agent2=1:7.2.7-1+debian12` ([GitHub][1])
+* `zabbix-agent2=1:7.2.7-1+debian12` 
 
-> ⚠️ O projeto depende de **ambientes/variáveis específicas** para cada POP (e possivelmente de PSKs/Token da API). Não é necessário executar nada fora do host alvo, mas garanta que as credenciais/PSK/Token estejam preenchidas nas variáveis.
+> ⚠️ O projeto depende de **ambientes/variáveis específicas** para cada POP (e possivelmente de PSKs/Token da API). Não é necessário executar nada fora do host alvo, pois tudo é gerado automaticamente.
 
 ---
 
@@ -114,8 +114,8 @@ Versões Zabbix já validadas no projeto (ajuste se necessário):
 1. **Clonar este repositório no host alvo**
 
 ```bash
-git clone https://github.com/felipeanj0s/Delta.git
-cd Delta
+git clone https://git.rnp.br/gt-monitoramento/poc-monitoramento.git
+cd dev-zbxproxy/
 ```
 
 2. **Definir o inventário** em `hosts`
@@ -124,13 +124,13 @@ cd Delta
 
 3. **Criar o arquivo de variáveis do POP**
 
-   * Em `group_vars/pops_configs/`, crie **`<sigla_do_estado>.yml`** (ex.: `ce.yml`) com as variáveis do seu ambiente (vide seção abaixo). ([GitHub][1])
+   * Em `group_vars/pops_configs/`, crie **`<sigla_do_estado>.yml`** (ex.: `ce.yml`) com as variáveis do seu ambiente. 
 
 ---
 
 ## Configuração por POP (variáveis locais)
 
-Crie/edite `group_vars/pops_configs/<sigla>.yml` com, no mínimo:
+Crie/edite `group_vars/pops_configs/<sigla>.yml` seguindo o `exemplo` a seguir:
 
 ```yaml
 # Identidade do Proxy (nome único no ambiente)
@@ -138,26 +138,24 @@ zabbix_proxy_hostname: "ce-zabbix-rnp-ger-proxy01"
 
 # Rede (Netplan)
 pop_network_ipv4_address: "192.168.0.17/24"
+pop_network_ipv6_address: "....."
 pop_network_ipv4_gateway:  "192.168.0.9"
+pop_network_ipv6_gateway: "....."
+
 pop_network_dns_list:
   - "200.19.16.53"
   - "200.137.53.53"
 
-# SSH
+# Porta customizável para acesso ssh da VM
 ssh_port: 25085
 
-# (Exemplos) Credenciais/segredos que sua role espera:
-# zabbix_api_url: "http://SEU_ZABBIX_SERVER/zabbix/api_jsonrpc.php"
-# zabbix_api_token: "xxxxx"
-# zabbix_psk_identity: "proxy-ce"
-# zabbix_psk_key: "CHAVE_HEX_64"
 ```
 
 > Dica de operação:
 >
 > * Tire **snapshot** da VM antes da primeira execução (mudanças de rede/firewall podem cortar o acesso).
 > * Após rodar, o SSH ficará disponível **na nova porta** definida em `ssh_port`.
-> * O UFW sobe restritivo, então **libere previamente** o gateway/gestão para evitar bloqueio. ([GitHub][1])
+> * O UFW sobe restritivo, então **libere previamente** o gateway/gestão para evitar bloqueio.
 
 ---
 
@@ -169,11 +167,21 @@ Rode **no host alvo**:
 ansible-playbook -i hosts prov_zbxproxy.yml --limit <sigla_do_estado> -K
 ```
 
-Parâmetros úteis:
+Guia rápido do -v para debug:
 
-* `--limit <grupo>`: executa só para o grupo (ex.: `ce`)
-* `-K`: solicita senha de `sudo`
-* `-v | -vv | -vvv | -vvvv`: níveis de verbosidade para depuração ([GitHub][1])
+| Parâmetro | Descrição |
+| :--- | :--- |
+| `--limit <grupo>` | Executa apenas para o grupo especificado (ex: `ce`). |
+| `-K` | Solicita senha do `sudo` da VM. |
+| `-v` | Verbose / Detalhado |
+| `-vv` | Very Verbose / Muito Detalhado |
+| `-vvv` | Verbosidade extra para debug. |
+| `-vvvv` | Debug Maximo |
+
+Ex:
+   ```bash
+   ansible-playbook -i hosts prov_zbxproxy.yml --limit ce -K -v
+   ```
 
 ---
 
@@ -201,7 +209,7 @@ Parâmetros úteis:
 ## FAQ Rápido
 
 **Posso rodar várias vezes?**
-Sim. O play é **idempotente** e deve convergir para o estado desejado. ([GitHub][1])
+Sim. O play é **idempotente** e deve convergir para o estado desejado. 
 
 **Preciso abrir portas no firewall?**
 A role de segurança já libera **SSH** (na porta configurada) e portas do **Zabbix**. Ajustes extras podem ser feitos nas variáveis do POP.
@@ -216,14 +224,6 @@ O exemplo utiliza `zabbix-proxy-sqlite3`. Se for usar outra variante, alinhe as 
 
 ## Créditos
 
-Baseado no trabalho do **GT Monitoramento 2025** e nas roles/estrutura deste repositório. ([GitHub][1])
-
+Criado por **GT Monitoramento 2025**.
 ---
 
-### Notas da análise
-
-* O README antigo do repo já refletia a proposta (execução local, hardening, integração via API) e listava as roles/fluxo; eu corrigi **URL de clone** e normalizei a **organização por POP** e exemplos de comando, removendo referências a outro repositório/paths que constavam no texto original. ([GitHub][1])
-
-Se quiser, eu já abro um **PR** com este README no seu repositório — ou te mando em outro formato (PDF/Markdown “bonitão” com sumário clicável).
-
-[1]: https://github.com/felipeanj0s/Delta "GitHub - felipeanj0s/Delta"
