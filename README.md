@@ -211,11 +211,11 @@ Você deverá encontrar o proxy recém-criado com as seguintes características:
 -   **Estado:** Online
 -   **Última vez visto (idade):** Um valor baixo, como "alguns segundos", indicando comunicação ativa e recente com o Zabbix Server.
 
-*![alt text](image-2.png)*
+*![alt text](/imagens/image-2.png)*
 
-*![alt text](image.png)*
+*![alt text](/imagens/image.png)*
 
-*![alt text](image-1.png)*
+*![alt text](/imagens/image-1.png)*
 
 ### 2. Status do Host (Agente)
 
@@ -226,11 +226,11 @@ Você deverá encontrar o host correspondente ao agente do proxy com os seguinte
 -   A coluna **Disponibilidade** mostrará um **ícone ZBX verde**, confirmando que o Zabbix Server está conseguindo coletar dados do agente via TLS/PSK.
 -   Ao clicar no host para editar, a opção **Monitorado por** estará corretamente marcada como **Servidor**.
 
-*![alt text](image-3.png)*
+*![alt text](/imagens/image-3.png)*
 
-*![alt text](image-4.png)*
+*![alt text](/imagens/image-4.png)*
 
-*![alt text](image-5.png)*
+*![alt text](/imagens/image-5.png)*
 
 
 <a id="solucao-de-problemas"></a>
@@ -265,4 +265,3 @@ Você deverá encontrar o host correspondente ao agente do proxy com os seguinte
 
 
 
-![alt text](image-5.png)
