@@ -3,11 +3,11 @@
 # Variáveis Globais do Projeto
 # Arquivo: group_vars/all.yml
 # Descrição: Este arquivo contém variáveis globais utilizadas nos roles:
-#             - net_security (roles/net_security)
+#             - vm_config_setup (roles/vm_config_setup)
 #             - zabbix_proxy (roles/zabbix_proxy)
 #             - zabbix_agent (roles/zabbix_agent)
-#             - zabbix_server_register_proxy (roles/zabbix_server_register_proxy)
-#             - zabbix_server_register_agent (roles/zabbix_server_register_agent)
+#             - zabbix_api_proxy (roles/zabbix_api_proxy)
+#             - zabbix_api_agent (roles/zabbix_api_agent)
 # Feito por: GT de Monitoramento 2025
 # ==============================================================================
 
@@ -298,7 +298,6 @@ ufw_rules:
     proto: tcp
     comment: "Zabbix Proxy - Active Servers"
     direction: in
-# Arquivo: group_vars/all.yml
 
 # ==============================================================================
 # Seção VI: Configurações de Registro de Host na API

@@ -5,21 +5,29 @@
 # e do Zabbix Agent utilizando Ansible.
 # Feito por: GT de Monitoramento 2025
 # ==============================================================================
-
 ---
+- name: Setup | Determinar a localidade a partir do grupo do inventário
+  ansible.builtin.set_fact:
+    # Pega o primeiro grupo ao qual o host pertence (ex: 'ce', 'rj', 'sp')
+    # Esta variável 'group_names' é fornecida automaticamente pelo Ansible.
+    location_code: "{{ group_names[0] }}"
+
+- name: Setup | Carregar variáveis específicas da localidade
+  ansible.builtin.include_vars:
+    file: "group_vars/pops_configs/{{ location_code }}.yml"
+  ignore_errors: no   # Se o arquivo (ex: group_vars/ce.yml) não existir, o playbook vai parar com um erro.
+
 - name: Configurar Zabbix Proxy e Agent
   hosts: all
   become: yes
 
   # --- TASKS: Execução das Roles ---
-  tasks:
-    - name: Executar role setup_context
-      include_role:
-        name: setup_context
 
-    - name: Executar role net_security
+  # Importante! Essas roles devem ser executadas nesta ordem. 
+  tasks:
+    - name: Executar role vm_config_setup
       include_role:
-        name: net_security
+        name: vm_config_setup
 
     - name: Executar role zabbix_proxy
       include_role:
@@ -29,10 +37,10 @@
       include_role:
         name: zabbix_agent
         
-    - name: Executar role zabbix_server_register_proxy
+    - name: Executar role zabbix_api_proxy
       include_role:
-        name: zabbix_server_register_proxy
+        name: zabbix_api_proxy
 
-    - name: Executar role zabbix_server_register_agent
+    - name: Executar role zabbix_api_agent
       include_role:
-        name: zabbix_server_register_agent
+        name: zabbix_api_agent
