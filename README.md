@@ -11,7 +11,6 @@
   - [Workflow de Provisionamento](#workflow-de-provisionamento)
 - [Configuração Detalhada](#configuracao-detalhada)
 - [Resultados Esperados](#-resultados-esperados)
-- [Solução de Problemas](#solucao-de-problemas)
 - [Limitações e Observações](#limitacoes-e-observacoes)
 - [Autores](#autores)
 
@@ -30,6 +29,9 @@ A automação é executada **localmente no host de destino** e inclui:
 
 O objetivo é fornecer um método rápido, seguro e replicável para implantar novos Zabbix Proxies em Pontos de Presença (POPs) distintos, garantindo um estado final consistente e pronto para produção.  
 
+
+
+**Versão 6**
 ---
 
 <a id="principais-funcionalidades"></a>
@@ -211,12 +213,6 @@ Você deverá encontrar o proxy recém-criado com as seguintes características:
 -   **Estado:** Online
 -   **Última vez visto (idade):** Um valor baixo, como "alguns segundos", indicando comunicação ativa e recente com o Zabbix Server.
 
-*![alt text](/imagens/image-2.png)*
-
-*![alt text](/imagens/image.png)*
-
-*![alt text](/imagens/image-1.png)*
-
 ### 2. Status do Host (Agente)
 
 Navegue até **Monitoramento -> Hosts**.
@@ -226,21 +222,6 @@ Você deverá encontrar o host correspondente ao agente do proxy com os seguinte
 -   A coluna **Disponibilidade** mostrará um **ícone ZBX verde**, confirmando que o Zabbix Server está conseguindo coletar dados do agente via TLS/PSK.
 -   Ao clicar no host para editar, a opção **Monitorado por** estará corretamente marcada como **Servidor**.
 
-*![alt text](/imagens/image-3.png)*
-
-*![alt text](/imagens/image-4.png)*
-
-*![alt text](/imagens/image-5.png)*
-
-
-<a id="solucao-de-problemas"></a>
-## 💡 Solução de Problemas
-
-| Sintoma | Diagnóstico | Solução |
-| :--- | :--- | :--- |
-| Proxy não inicia | `systemctl status zabbix-proxy` | Revisar `ServerPort` e diretórios criados. |
-| Erro TLS no agente | Log em `/var/log/zabbix/zabbix_agent2.log` | PSK incompatível / cache antigo no server. |
-| Agente "Desconhecido" | Conferir configuração do host na UI | O agente do proxy deve ser monitorado **direto pelo Server**. |
 
 ---
 

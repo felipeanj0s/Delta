@@ -1,4 +1,11 @@
+# ==============================================================================
+# GT Monitoramento 2025
 # Arquivo: prov_zbxproxy.yml
+# Descrição: Este é o arquivo principal de provsionamento do Zabbix Proxy 
+# e do Zabbix Agent utilizando Ansible.
+# Feito por: GT de Monitoramento 2025
+# ==============================================================================
+
 ---
 - name: Configurar Zabbix Proxy e Agent
   hosts: all

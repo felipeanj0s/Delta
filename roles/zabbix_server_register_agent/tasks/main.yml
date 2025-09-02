@@ -2,7 +2,12 @@
 # GT Monitoramento 2025
 # Arquivo: roles/zabbix_server_register_agent/tasks/main.yml
 # Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
-# Método: API Direta via ansible.builtin.uri
+# Referências:
+# 1) API Zabbix: https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api
+# 2) Ansible Zabbix Proxy Group Module: https://docs.ansible.com/ansible/latest/collections/community/zabbix/zabbix_proxy_group_module.html
+# 3) BrandyMint Ansible Zabbix Agent 2: https://github.com/BrandyMint/ansible-zabbix-agent2
+# 4) Piccadil Zabbix Agent: https://github.com/piccadil/zabbix-agent
+# 5) https://www.reddit.com/r/zabbix/comments/1ffwqvo/adding_new_host_to_zabbixserver_via_ansible/
 # ======================================================================
 ---
 # 0) Verificação e preparação de variáveis
@@ -113,7 +118,7 @@
     zbx_host_exists: "{{ (zbx_get_host.json.result | default([])) | length > 0 }}"
     zbx_host_id: "{{ (zbx_get_host.json.result | map(attribute='hostid') | first | default('')) }}"
 
-# 3) Criar o host (mínimo) se não existir
+# 3) Criar o host se não existir
 - name: API | host.create (mínimo)
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"
@@ -156,7 +161,7 @@
     zbx_host_id: "{{ zbx_create_host.json.result.hostids[0] }}"
   when: not zbx_host_exists
 
-# 4) Atualizar o host com templates e encriptação (sempre)
+# 4) Atualizar o host com templates e encriptação
 - name: API | host.update (templates e encriptação)
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"

@@ -2,6 +2,10 @@
 # GT Monitoramento 2025
 # roles/zabbix_server_register_proxy/tasks/main.yml
 # Descrição: Registra o Proxy no Zabbix Server.
+# Referências:
+# 1) API Zabbix: https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api
+# 2) Ansible Zabbix Proxy Group Module: https://docs.ansible.com/ansible/latest/collections/community/zabbix/zabbix_proxy_group_module.html
+# 3) https://github.com/ansible-collections/community.zabbix/blob/main/docs/ZABBIX_PROXY_ROLE.md
 # ======================================================================
 ---
 # 0) Base da API: usa a URL completa se houver; senão monta pelos componentes
@@ -10,22 +14,10 @@
   ansible.builtin.set_fact:
     _zbx_url_pref: "{{ (zabbix_server_url | default('')) | string | trim }}"
 
-- name: Montar URL base (A) a partir da URL completa
+- name: Ler a URL 
   ansible.builtin.set_fact:
     _zbx_base_url: "{{ _zbx_url_pref | regex_replace('/+$','') }}"
   when: _zbx_url_pref | length > 0
-
-- name: Montar URL base (B) a partir de componentes
-  ansible.builtin.set_fact:
-    _zbx_scheme: "{{ (zabbix_server_use_https | default(false) | bool) | ternary('https','http') }}"
-    _zbx_port: >-
-      {{
-        ((zabbix_server_port | default('')) | string | trim | length) > 0
-          | ternary((zabbix_server_port | int), (zabbix_server_use_https | default(false) | bool | ternary(443,80)))
-      }}
-    _zbx_path: "{{ (zabbix_server_path | default('zabbix')) | trim('/') }}"
-    _zbx_base_url: "{{ _zbx_scheme ~ '://' ~ zabbix_server_host ~ ':' ~ _zbx_port ~ '/' ~ _zbx_path }}"
-  when: _zbx_url_pref | length == 0
 
 - name: Definir endpoint da API
   ansible.builtin.set_fact:
@@ -87,7 +79,7 @@
     zbx_tls_acc_cur: "{{ (zbx_proxy_get.json.result | default([])) | map(attribute='tls_accept') | first | default(omit) }}"
 
 # 2) Criar (minimo)
-- name: API | proxy.create (minimo)
+- name: API | proxy.create
   ansible.builtin.uri:
     url: "{{ zbx_api_url }}"
     method: POST
