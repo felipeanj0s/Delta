@@ -12,6 +12,7 @@
 
 # Atenção: a ordem das roles é importante. Não alterar.
   roles:
+    - load_vars
     - vm_config_setup
     - zabbix_proxy
     - zabbix_agent
