@@ -1,7 +1,7 @@
 ---
 # ==============================================================================
-# Handlers da Role 'network_security'
-# Arquivo: roles/net_security/handlers/main.yml
+# Handlers da Role 'vm_config_setup'
+# Arquivo: roles/vm_config_setup/handlers/main.yml
 # ==============================================================================
 
 # Reiniciar serviço de rede (Debian ifupdown)

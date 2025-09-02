@@ -1,6 +1,0 @@
----
-# ==============================================================================
-# Task para a Role 'setup_context'
-# Arquivo: roles/setup_context/tasks/main.yml
-# Descrição: Garante que as variáveis sejam carregadas corretamente.
-# ==============================================================================

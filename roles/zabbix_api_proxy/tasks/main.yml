@@ -1,6 +1,6 @@
 # ======================================================================
 # GT Monitoramento 2025
-# roles/zabbix_server_register_proxy/tasks/main.yml
+# roles/zabbix_api_proxy/tasks/main.yml
 # Descrição: Registra o Proxy no Zabbix Server.
 # Referências:
 # 1) API Zabbix: https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api

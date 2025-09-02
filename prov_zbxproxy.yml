@@ -1,46 +1,19 @@
 # ==============================================================================
 # GT Monitoramento 2025
 # Arquivo: prov_zbxproxy.yml
-# Descrição: Este é o arquivo principal de provsionamento do Zabbix Proxy 
-# e do Zabbix Agent utilizando Ansible.
-# Feito por: GT de Monitoramento 2025
+# Descrição: Provisionamento do Zabbix Proxy e Agent com Ansible.
 # ==============================================================================
 ---
-- name: Setup | Determinar a localidade a partir do grupo do inventário
-  ansible.builtin.set_fact:
-    # Pega o primeiro grupo ao qual o host pertence (ex: 'ce', 'rj', 'sp')
-    # Esta variável 'group_names' é fornecida automaticamente pelo Ansible.
-    location_code: "{{ group_names[0] }}"
-
-- name: Setup | Carregar variáveis específicas da localidade
-  ansible.builtin.include_vars:
-    file: "group_vars/pops_configs/{{ location_code }}.yml"
-  ignore_errors: no   # Se o arquivo (ex: group_vars/ce.yml) não existir, o playbook vai parar com um erro.
-
-- name: Configurar Zabbix Proxy e Agent
+- name: Provisionar Zabbix Proxy e Agent
   hosts: all
   become: yes
+  gather_facts: yes
 
-  # --- TASKS: Execução das Roles ---
 
-  # Importante! Essas roles devem ser executadas nesta ordem. 
-  tasks:
-    - name: Executar role vm_config_setup
-      include_role:
-        name: vm_config_setup
-
-    - name: Executar role zabbix_proxy
-      include_role:
-        name: zabbix_proxy
-
-    - name: Executar role zabbix_agent
-      include_role:
-        name: zabbix_agent
-        
-    - name: Executar role zabbix_api_proxy
-      include_role:
-        name: zabbix_api_proxy
-
-    - name: Executar role zabbix_api_agent
-      include_role:
-        name: zabbix_api_agent
+# Atenção: a ordem das roles é importante. Não alterar.
+  roles:
+    - vm_config_setup
+    - zabbix_proxy
+    - zabbix_agent
+    - zabbix_api_proxy
+    - zabbix_api_agent

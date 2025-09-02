@@ -1,6 +1,6 @@
 # ======================================================================
 # GT Monitoramento 2025
-# Arquivo: roles/zabbix_server_register_agent/tasks/main.yml
+# Arquivo: roles/zabbix_api_agent/tasks/main.yml
 # Descrição: Registra/atualiza host do Zabbix Agent 2 no Zabbix Server.
 # Referências:
 # 1) API Zabbix: https://www.zabbix.com/documentation/2.0/en/manual/appendix/api/api
